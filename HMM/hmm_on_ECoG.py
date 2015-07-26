@@ -57,22 +57,26 @@ def accuracy(data, labels, model_pos, model_neg, show_prediction=False):
         return acc
         
 # parameter search over number of hidden states
-hidden_state_range = range(100,101)
-accuracy_results = []
-for nstates in hidden_state_range:    
-    # make new random split    
-    train_pos, train_neg, val_data, val_labels = random_split(data=trainval_data, labels=trainval_labels, ratio=0.7)
-    model_pos = hmm.GaussianHMM(nstates, covariance_type="full", n_iter=10)        
-    model_pos.fit(train_pos)
-    model_neg = hmm.GaussianHMM(nstates, covariance_type="full", n_iter=10)
-    model_neg.fit(train_neg)   
-    # validation
-    acc = accuracy(val_data, val_labels, model_pos, model_neg)
-    print nstates, acc
-    accuracy_results.append(acc)
-   
-best_state_number = hidden_state_range[np.argmax(accuracy_results)]
-print "The best accuracy of %f achived with number of states %d" % (np.max(accuracy_results), best_state_number)
+hidden_state_range = range(2,20)
+accuracy_results = {}
+for nstates in hidden_state_range:
+    accuracy_results[nstates] = []
+    for run in range(10):
+        # make new random split    
+        train_pos, train_neg, val_data, val_labels = random_split(data=trainval_data, labels=trainval_labels, ratio=0.7)
+        model_pos = hmm.GaussianHMM(nstates, covariance_type="full", n_iter=50)        
+        model_pos.fit(train_pos)
+        model_neg = hmm.GaussianHMM(nstates, covariance_type="full", n_iter=50)
+        model_neg.fit(train_neg)   
+        # validation
+        acc = accuracy(val_data, val_labels, model_pos, model_neg)
+        print nstates, acc
+        accuracy_results[nstates].append(acc)
+
+with open("../../Results/crossvalidated_accuracy.txt","w") as f:
+    for nstates in hidden_state_range:
+        print nstates, np.mean(accuracy_results[nstates]), np.std(accuracy_results[nstates])
+        f.write("%d, %s\n" % (nstates, ", ".join([str(x) for x in accuracy_results[nstates]])))
 
 # Now use real test data
 # model_pos = hmm.GaussianHMM(best_state_number, covariance_type="full", n_iter=1000)
@@ -80,4 +84,3 @@ print "The best accuracy of %f achived with number of states %d" % (np.max(accur
 # model_pos.fit(trainval_pos)
 # model_neg = hmm.GaussianHMM(best_state_number, covariance_type="full", n_iter=1000)
 # model_neg.fit(trainval_neg)
-
