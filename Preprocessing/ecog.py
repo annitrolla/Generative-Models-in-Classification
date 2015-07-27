@@ -23,11 +23,11 @@ class ECoG:
         self.test_labels = np.loadtxt("/storage/hpc_anna/GMiC/Data/ECoG/Competition_test_lab_onezero.txt")
 
     def split_train_val(self, ratio=0.7):
-        idx_train = np.random.choice(range(0, data.shape[0]), size=int(data.shape[0]*ratio), replace=False)
-        idx_val = list(set(range(0, data.shape[0]))- set(idx_train))
-        train_data = data[idx_train, :, :]
-        train_labels = labels[idx_train]
-        val_data = data[idx_val, :, :]
-        val_labels = labels[idx_val]    
+        idx_train = np.random.choice(range(0, self.trainval_data.shape[0]), size=int(self.trainval_data.shape[0] * ratio), replace=False)
+        idx_val = list(set(range(0, self.trainval_data.shape[0])) - set(idx_train))
+        train_data = self.trainval_data[idx_train, :, :]
+        train_labels = self.trainval_labels[idx_train]
+        val_data = self.trainval_data[idx_val, :, :]
+        val_labels = self.trainval_labels[idx_val]    
         return train_data, train_labels, val_data, val_labels
 
