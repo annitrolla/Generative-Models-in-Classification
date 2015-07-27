@@ -20,4 +20,4 @@ for r in range(raw_data.shape[0]):
 
 
 np.savetxt('../../Data/ECoG/Competition_train_cnt_scaled.txt', raw_data, fmt='%f')
-np.savetxt('../../Data/ECoG/Competition_train_lab_onezero.txt', raw_data, fmt='%d')
+np.savetxt('../../Data/ECoG/Competition_train_lab_onezero.txt', trainval_labels, fmt='%d')
