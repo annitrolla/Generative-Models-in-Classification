@@ -8,6 +8,7 @@ import numpy as np
 from scipy.fftpack import fft
 from scipy.signal import detrend
 import matplotlib.pylab as plt
+import cPickle
 
 
 class Preprocessor:
@@ -25,7 +26,7 @@ class Preprocessor:
         binstep = int(sfreq / ws)
 
         # one bin should correspond to 1Hz regardless of windows size and sampling frequency
-        bins = [(start, start + binstep - 1) for start in range(0, ws / 2, binstep)]
+        bins = [(start, start + binstep - 1) for start in range(0, 150, binstep)]
 
         # transform data
         channels = rawdata.shape[1]
@@ -57,8 +58,25 @@ class Preprocessor:
 
 
 if __name__ == '__main__':
-    data = np.loadtxt('../../Data/ECoG/Competition_train_cnt_sample.txt')
+    data = np.loadtxt('/storage/hpc_anna/GMiC/Data/ECoG/Competition_test_cnt.txt')
+    labels = np.loadtxt('/storage/hpc_anna/GMiC/Data/ECoG/Competition_test_lab_onezero.txt')
+    
+    fourier_data = []
+    fourier_labels = np.array([[x]*len(range(0, 2000, 100)) for x in labels]).flatten()
+    
     for i in range(0, data.shape[0], 64):
-        trial = data[i:i+64, 1:500].T
-        sample = Preprocessor.monofourier(trial)
-        print sample.shape
+        print i
+        for s in range(0, 2000, 100):
+            trial = data[i:i+64, s:s+1000].T
+            sample = Preprocessor.monofourier(trial)
+            fourier_data.append(sample)
+    
+    with open('/storage/hpc_anna/GMiC/Data/ECoG/Competition_test_fourier_data.pkl', 'wb') as f:
+       cPickle.dump(fourier_data, f)
+
+    with open('/storage/hpc_anna/GMiC/Data/ECoG/Competition_test_fourier_labels.pkl', 'wb') as f:
+       cPickle.dump(fourier_labels, f)
+            
+    
+            
+            
