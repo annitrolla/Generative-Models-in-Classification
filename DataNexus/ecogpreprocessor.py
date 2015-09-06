@@ -75,14 +75,16 @@ class ECoGPreprocessor:
         return data
 
     @staticmethod
-    def slice(data, winsize, winstep):
+    def slice(data, labels, winsize, winstep):
         sliced = np.empty((data.shape[0] * ((data.shape[2] - winsize) / winstep + 1), data.shape[1], winsize))
+        newlabels = np.empty((data.shape[0] * ((data.shape[2] - winsize) / winstep + 1)))
         counter = 0
         for i in range(data.shape[0]):
             for s in range(0, data.shape[2] - winsize + 1, winstep):
                 sliced[counter, :, :] = data[i, :, s:s+winsize].reshape(1, data.shape[1], winsize)
+                newlabels[counter] = labels[i]
                 counter += 1
-        return sliced
+        return sliced, newlabels
 
 
 if __name__ == '__main__':
@@ -94,30 +96,30 @@ if __name__ == '__main__':
     print "Loading raw training data..."
     train_raw = np.loadtxt("/storage/hpc_anna/GMiC/Data/ECoG/raw/train_data.txt")
     train_raw = np.reshape(train_raw, (278, 64, 3000))
+    train_labels = np.loadtxt("/storage/hpc_anna/GMiC/Data/ECoG/raw/train_labels.txt")
 
     print "Slicing training data..."
-    train_sliced = ECoGPreprocessor.slice(train_raw, 300, 100)
+    train_sliced, train_labels = ECoGPreprocessor.slice(train_raw, train_labels, 300, 100)
 
     print "Scaling training data..."
     train_scaled = ECoGPreprocessor.scale(train_sliced)
 
     print "Storing training dataset..."
-    train_labels = np.loadtxt("/storage/hpc_anna/GMiC/Data/ECoG/raw/train_labels.txt")
     np.save("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_data.npy", train_scaled)
     np.save("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_labels.npy", train_labels)
 
     print "Loading raw test data..."
     test_raw = np.loadtxt("/storage/hpc_anna/GMiC/Data/ECoG/raw/test_data.txt")
     test_raw = np.reshape(test_raw, (100, 64, 3000))
+    test_labels = np.loadtxt("/storage/hpc_anna/GMiC/Data/ECoG/raw/test_labels.txt")
 
     print "Slicing test data..."
-    test_sliced = ECoGPreprocessor.slice(test_raw, 300, 100)
+    test_sliced, test_labels = ECoGPreprocessor.slice(test_raw, test_labels, 300, 100)
 
     print "Scaling test data..."
     test_scaled = ECoGPreprocessor.scale(test_sliced)
 
     print "Storing test dataset..."
-    test_labels = np.loadtxt("/storage/hpc_anna/GMiC/Data/ECoG/raw/test_labels.txt")
     np.save("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/test_data.npy", test_scaled)
     np.save("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/test_labels.npy", test_labels)
 
