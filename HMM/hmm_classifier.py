@@ -5,18 +5,16 @@ handles functions required for hmm classification
 
 import numpy as np
 from hmmlearn import hmm
-from Preprocessing.ecog import ECoG
+
 
 class HMMClassifier:
     
-    # load the data
-    ecog = None
+    #: DataHandler object
+    dh = None
     
-    def __init__(self):
-        self.ecog = ECoG()
-        self.ecog.load_train_data()
+    def __init__(self, dh):
+        self.dh = dh
         
-    
     # tensor to list (for HMM input)
     def tensor_to_list(self, tensor):
         """
@@ -56,7 +54,7 @@ class HMMClassifier:
             accuracy_results[nstates] = []
             for run in nrepeatitions:
                 # make new random split  
-                train_data, train_labels, val_data, val_labels = self.ecog.split_train_val(ratio)
+                train_data, train_labels, val_data, val_labels = self.dh.split_train(ratio)
                 train_pos = train_data[train_labels==1, :, :]
                 train_neg = train_data[train_labels==0, :, :]
                 train_pos = self.tensor_to_list(train_pos)
@@ -77,14 +75,14 @@ class HMMClassifier:
                 f.write("%d, %s\n" % (nstates, ", ".join([str(x) for x in accuracy_results[nstates]])))
     
     def test_model(self, nstates, niter):
-        self.ecog.load_test_data()
-        
-        trainval_pos = self.tensor_to_list(self.ecog.trainval_data[self.ecog.trainval_labels==1, :, :])
-        trainval_neg = self.tensor_to_list(self.ecog.trainval_data[self.ecog.trainval_labels==0, :, :])
-        test = self.tensor_to_list(self.ecog.test_data)
+        trainval_pos = self.tensor_to_list(self.dh.trainval_data[self.dh.trainval_labels==1, :, :])
+        trainval_neg = self.tensor_to_list(self.dh.trainval_data[self.dh.trainval_labels==0, :, :])
+        test = self.tensor_to_list(self.dh.test_data)
+        print "Start training the positive model..."
         model_pos = hmm.GaussianHMM(nstates, covariance_type="full", n_iter=niter)
         model_pos.fit(trainval_pos)
+        print "Start training the negative model..."
         model_neg = hmm.GaussianHMM(nstates, covariance_type="full", n_iter=niter)
         model_neg.fit(trainval_neg)
-        acc = self.accuracy(test, self.ecog.test_labels, model_pos, model_neg)
+        acc = self.accuracy(test, self.dh.test_labels, model_pos, model_neg)
         return acc, nstates
