@@ -41,18 +41,20 @@ class HMMClassifier:
         else:
             return acc
     
-    def find_best_parameter(self, ratio, hdn_nstates_list, niter, nrepeatitions):
+    def find_best_parameter(self, ratio, hdn_nstates_list, niter, nrepetitions):
         """
         parameter search over number of hidden states
         @param hdn_nstates_list: list of number of hidden states to try, e.g. range(2,10)
         @param ratio: ratio of the dataset split for train, e.g. 0.7
         @param niter: number of iterations for hmm model to perform, e.g. 10
-        @param nrepeatitions: number of repeated run for the same hidden state, but for the different split, e.g. range(5)
+        @param nrepetitions: number of repeated runs for the same hidden state, but for the different split, e.g. 5
         """
         accuracy_results = {}
         for nstates in hdn_nstates_list:
+            print 'state' + str(nstates)
             accuracy_results[nstates] = []
-            for run in nrepeatitions:
+            for run in range(nrepetitions):
+                print 'repetition' + ' ' + str(run) 
                 # make new random split  
                 train_data, train_labels, val_data, val_labels = self.dh.split_train(ratio)
                 train_pos = train_data[train_labels==1, :, :]
