@@ -4,17 +4,22 @@
     "experiment-name" : "ecog",
     "likelihood"      : "GAUSSIAN",
     "variables" : {
-        "x" : {
-            "type" : "FLOAT",
+        "lstmsize" : {
+            "type" : "INT",
             "size" : 1,
-            "min"  : -5,
-            "max"  : 10
+            "min"  : 50,
+            "max"  : 500
         },
-        "y" : {
+        "dropout" : {
             "type" : "FLOAT",
             "size" : 1,
-            "min"  : 0,
-            "max"  : 15
+            "min"  : 0.0,
+            "max"  : 0.8
+        },
+        "optim" : {
+            "type" : "ENUM",
+            "size" : 1,
+            "options"  : ["adagrad", "rmsprop", "adam"] 
         }
     }
 }
