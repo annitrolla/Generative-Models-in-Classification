@@ -60,7 +60,7 @@ class ECoGPreprocessor:
         self.load_test_data()
 
         # split trainval to train and val
-        train_data, train_labels, val_data, val_labels = self.split_train_val(ratio=0.7)
+        train_data, train_labels, val_data, val_labels = self.split_train(ratio=0.7, self.trainval_data, self.trainval_labels)
 	
         # store training, validation and test as NetCDF
         self.dataset_to_netcdf(train_data, train_labels, 'train.nc')

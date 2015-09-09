@@ -64,8 +64,8 @@ if __name__ == '__main__':
     dh.load_test_data()
     
     # transforming train data to fourier
-    fourier_data = np.empty((dh.trainval_data.shape[0], 3200))
-    for i, sample in enumerate(dh.trainval_data): 
+    fourier_data = np.empty((dh.train_data.shape[0], 3200))
+    for i, sample in enumerate(dh.train_data): 
         fourier_data[i] = Fourier.monofourier(sample.T)
     np.save('/storage/hpc_anna/GMiC/Data/ECoG/fourier/train_data.npy', fourier_data)
 

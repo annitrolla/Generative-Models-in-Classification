@@ -7,11 +7,12 @@ Created on Wed Jul 22 17:58:39 2015
 from HMM.hmm_classifier import HMMClassifier
 from DataNexus.datahandler import DataHandler
 
+train_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_data.npy")
+train_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_labels.npy")
+test_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/test_data.npy")
+test_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/test_labels.npy")
 
-dh = DataHandler("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed")
-dh.load_train_data()
-dh.load_test_data()
-
-hmmcl = HMMClassifier(dh)
-#print hmmcl.test_model(2, 10)
-hmmcl.find_best_parameter(0.7, range(10,21), 10, 5)
+hmmcl = HMMClassifier()
+#model_pos, model_neg = hmmcl.train(20, 100, train_data, train_labels)
+#print hmmcl.test_model(model_pos, model_neg, test_data, test_labels)
+hmmcl.find_best_parameter(0.7, range(10,21), 10, 5, train_data, train_labels)

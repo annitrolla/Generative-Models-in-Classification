@@ -10,11 +10,12 @@ from sklearn.decomposition import PCA
 import numpy as np
 from DataNexus.datahandler import DataHandler 
 
-dh = DataHandler('/storage/hpc_anna/GMiC/Data/ECoG/fourier')
-dh.load_train_data()
-dh.load_test_data()
+# load data
+train_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/fourier/train_data.npy")
+train_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoG/fourier/train_labels.npy")
+test_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/fourier/test_data.npy")
+test_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoG/fourier/test_labels.npy")
 
-   
 #pca = PCA(n_components=1000)
 #pca.fit()
 #pca.explained_variance_ratio_
@@ -27,7 +28,7 @@ dh.load_test_data()
 # val = pca_data[4001:5560,:]
 
 rf = RandomForestClassifier(n_estimators=500)
-rf.fit(dh.trainval_data, dh.trainval_labels)
+rf.fit(train_data, train_labels)
 
-print rf.score(dh.trainval_data, dh.trainval_labels)
-print rf.score(dh.test_data, dh.test_labels)
+print rf.score(train_data, train_labels)
+print rf.score(test_data, test_labels)
