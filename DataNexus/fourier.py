@@ -7,11 +7,10 @@ Convert ECoG data to Fourier features
 import numpy as np
 from scipy.fftpack import fft
 from scipy.signal import detrend
-import matplotlib.pylab as plt
-import cPickle
+from DataNexus.datahandler import DataHandler
 
 
-class Preprocessor:
+class Fourier:
 
     def __init__(self):
         pass
@@ -27,7 +26,7 @@ class Preprocessor:
         fftcutoff = 150
 
         # one bin should correspond to 1Hz regardless of windows size and sampling frequency
-        bins = [(start, start + binstep - 1) for start in range(0, 150, binstep)]
+        bins = [(start, start + binstep - 1) for start in range(0, fftcutoff, binstep)]
 
         # transform data
         channels = rawdata.shape[1]
@@ -60,25 +59,22 @@ class Preprocessor:
 
 
 if __name__ == '__main__':
-    data = np.loadtxt('/storage/hpc_anna/GMiC/Data/ECoG/Competition_test_cnt.txt')
-    labels = np.loadtxt('/storage/hpc_anna/GMiC/Data/ECoG/Competition_test_lab_onezero.txt')
+    dh = DataHandler("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed")
+    dh.load_train_data()
+    dh.load_test_data()
     
-    fourier_data = []
-    fourier_labels = np.array([[x]*len(range(0, 2000, 100)) for x in labels]).flatten()
-    
-    for i in range(0, data.shape[0], 64):
-        print i
-        for s in range(0, 2000, 100):
-            trial = data[i:i+64, s:s+1000].T
-            sample = Preprocessor.monofourier(trial)
-            fourier_data.append(sample)
-    
-    with open('/storage/hpc_anna/GMiC/Data/ECoG/Competition_test_fourier_data.pkl', 'wb') as f:
-       cPickle.dump(fourier_data, f)
+    # transforming train data to fourier
+    fourier_data = np.empty((dh.trainval_data.shape[0], 3200))
+    for i, sample in enumerate(dh.trainval_data): 
+        fourier_data[i] = Fourier.monofourier(sample.T)
+    np.save('/storage/hpc_anna/GMiC/Data/ECoG/fourier/train_data.npy', fourier_data)
 
-    with open('/storage/hpc_anna/GMiC/Data/ECoG/Competition_test_fourier_labels.pkl', 'wb') as f:
-       cPickle.dump(fourier_labels, f)
-            
+    # transforming test data to fourier
+    fourier_data = np.empty((dh.test_data.shape[0], 3200))
+    for i, sample in enumerate(dh.test_data):
+        fourier_data[i] = Fourier.monofourier(sample.T)
+    np.save('/storage/hpc_anna/GMiC/Data/ECoG/fourier/test_data.npy', fourier_data)
     
+
             
             
