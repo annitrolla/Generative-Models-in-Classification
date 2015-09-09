@@ -14,4 +14,4 @@ dh.load_test_data()
 
 hmmcl = HMMClassifier(dh)
 #print hmmcl.test_model(2, 10)
-hmmcl.find_best_parameter(0.7, range(2,10), 10, 5)
+hmmcl.find_best_parameter(0.7, range(10,21), 10, 5)
