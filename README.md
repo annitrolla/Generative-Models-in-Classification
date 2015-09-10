@@ -1,6 +1,9 @@
 # Generative Models in Classification
 
-## Folder structure
+### Basic Pipeline
+<img src="Documentation/Figures/basicpipeline.png" width="728px" />
+
+### Folder structure
 ```
 Project root
     ./Code   # THIS REPOSITORY
