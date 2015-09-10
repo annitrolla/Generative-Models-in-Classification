@@ -76,7 +76,7 @@ class Fourier:
 
             # lazily initialize results matrix
             if fourier_data is None:
-                fourier_data = np.empty((train_data.shape[0], len(instance)))
+                fourier_data = np.empty((data.shape[0], len(instance)))
 
             # store the transformed sample to the resulting dataset
             fourier_data[i] = instance
