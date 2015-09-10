@@ -4,6 +4,7 @@ Convert ECoG data to Fourier features
 
 """
 
+import sys
 import numpy as np
 from scipy.fftpack import fft
 from scipy.signal import detrend
@@ -57,22 +58,43 @@ class Fourier:
 
         return np.array(features)
 
+    @staticmethod
+    def data_to_fourier(data):
+        print "Transforming a dataset to Fourier space..."
+        
+        fourier_data = None
+        nsamples = data.shape[0]
+        
+        for i, sample in enumerate(data):
+            
+            # display progress
+            sys.stdout.write('{0}/{1}\r'.format(i, nsamples))
+            sys.stdout.flush()
+
+            # transform the sample in Fourier space
+            instance = Fourier.monofourier(sample.T)
+
+            # lazily initialize results matrix
+            if fourier_data is None:
+                fourier_data = np.empty((train_data.shape[0], len(instance)))
+
+            # store the transformed sample to the resulting dataset
+            fourier_data[i] = instance
+
+        return fourier_data
+
 
 if __name__ == '__main__':
-    dh = DataHandler("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed")
-    dh.load_train_data()
-    dh.load_test_data()
-    
-    # transforming train data to fourier
-    fourier_data = np.empty((dh.train_data.shape[0], 3200))
-    for i, sample in enumerate(dh.train_data): 
-        fourier_data[i] = Fourier.monofourier(sample.T)
+
+    print "Loading training data..."
+    train_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_data.npy")
+    print "Loading test data..."
+    test_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/test_data.npy")
+
+    fourier_data = Fourier.data_to_fourier(train_data)
     np.save('/storage/hpc_anna/GMiC/Data/ECoG/fourier/train_data.npy', fourier_data)
 
-    # transforming test data to fourier
-    fourier_data = np.empty((dh.test_data.shape[0], 3200))
-    for i, sample in enumerate(dh.test_data):
-        fourier_data[i] = Fourier.monofourier(sample.T)
+    fourier_data = Fourier.data_to_fourier(test_data)
     np.save('/storage/hpc_anna/GMiC/Data/ECoG/fourier/test_data.npy', fourier_data)
     
 
