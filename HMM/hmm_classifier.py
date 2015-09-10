@@ -81,5 +81,11 @@ class HMMClassifier:
         test = self.tensor_to_list(data)
         return self.accuracy(test, labels, model_pos, model_neg)
 
-    def pos_neg_ratios(model_pos, model_neg, data):
-        print "TODO"
+    def pos_neg_ratios(self, model_pos, model_neg, data):
+        data = self.tensor_to_list(data)
+        # find log-likelihood of positive model for a new sequence and the same for a negative one, substract
+        ratios = np.empty(len(data))
+        for i in range(len(data)):
+            ratios[i] = model_pos.score(data[i]) - model_neg.score(data[i])
+        return ratios
+
