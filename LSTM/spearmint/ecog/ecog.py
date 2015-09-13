@@ -36,7 +36,7 @@ def ecoglstm(lstmsize, dropout, optim):
     print("Training...")
     model.compile(loss='binary_crossentropy', optimizer=optim[0], class_mode="binary")
     results = model.fit(X_train, train_labels, batch_size=batch_size, nb_epoch=10, validation_split=0.3, show_accuracy=True)
-    result = results.history['val_acc'][-1]
+    result = -results.history['val_acc'][-1]
     print('Result = %f' % result)
     return result
 

@@ -1,0 +1,26 @@
+{
+    "language"        : "PYTHON",
+    "main-file"       : "ecogbin.py",
+    "experiment-name" : "ecogbin",
+    "likelihood"      : "GAUSSIAN",
+    "variables" : {
+        "lstmsize" : {
+            "type" : "INT",
+            "size" : 1,
+            "min"  : 50,
+            "max"  : 2000
+        },
+        "dropout" : {
+            "type" : "FLOAT",
+            "size" : 1,
+            "min"  : 0.0,
+            "max"  : 0.8
+        },
+        "optim" : {
+            "type" : "ENUM",
+            "size" : 1,
+            "options"  : ["adagrad", "rmsprop", "adam"] 
+        }
+    }
+}
+
