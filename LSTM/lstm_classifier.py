@@ -34,7 +34,7 @@ class LSTMClassifier:
 
     def build_model(self, data):
 
-        batch_size = 256
+        batch_size = 64
 
         # prepare training and test set as follows:
         #   sequences in the training set will miss one observation in the end [1...299]
