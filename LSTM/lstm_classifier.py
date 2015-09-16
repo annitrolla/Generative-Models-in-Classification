@@ -23,6 +23,7 @@ class LSTMClassifier:
         self.dropout = dropout
         self.optim = optim
         self.nepoch = nepoch
+
     @staticmethod
     def sequence_lag(data):
         X = np.empty((data.shape[0], data.shape[1]-1, data.shape[2]), dtype=np.float32)
@@ -99,7 +100,7 @@ if __name__ == '__main__':
     test_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/test_data.npy")
     test_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/test_labels.npy")
     
-    lstmcl = LSTMClassifier(256, 0.5, 'rmsprop', 20)
+    lstmcl = LSTMClassifier(2000, 0.8, 'adagrad', nepoch=20)
     model_pos, model_neg = lstmcl.train(train_data, train_labels)
     print(lstmcl.test(model_pos, model_neg, test_data, test_labels))
 
