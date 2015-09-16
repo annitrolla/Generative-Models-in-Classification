@@ -8,7 +8,7 @@
             "type" : "INT",
             "size" : 1,
             "min"  : 50,
-            "max"  : 500
+            "max"  : 10000
         },
         "dropout" : {
             "type" : "FLOAT",
