@@ -5,7 +5,7 @@ handles functions required for hmm classification
 
 import numpy as np
 from hmmlearn import hmm
-
+from DataNexus.datahandler import DataHandler
 
 class HMMClassifier:
     
@@ -51,7 +51,7 @@ class HMMClassifier:
                 print 'repetition' + ' ' + str(run) 
                 
                 # make new random split  
-                train_data, train_labels, val_data, val_labels = self.dh.split_train(ratio, data, labels)
+                train_data, train_labels, val_data, val_labels = DataHandler.split(ratio, data, labels)
                 
                 # train a model on this split
                 model_pos, model_neg = self.train(nstates, niter, train_data, train_labels)

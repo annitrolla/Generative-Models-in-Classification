@@ -6,6 +6,7 @@ Created on Wed Jul 22 17:58:39 2015
 """
 from HMM.hmm_classifier import HMMClassifier
 from DataNexus.datahandler import DataHandler
+import numpy as np
 
 train_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_data.npy")
 train_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_labels.npy")
