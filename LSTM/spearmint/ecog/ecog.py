@@ -14,7 +14,7 @@ from DataNexus.datahandler import DataHandler
 import numpy as np
                                    
 def ecoglstm(lstmsize, dropout, optim):
-    batch_size = 64
+    batch_size = 16
 
     print("Reading data...")
     train_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_data.npy")
