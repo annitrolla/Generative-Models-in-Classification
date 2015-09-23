@@ -89,3 +89,24 @@ class HMMClassifier:
             ratios[i] = model_pos.score(data[i]) - model_neg.score(data[i])
         return ratios
 
+if __name__ == '__main__':
+    
+    print("Reading data...")
+    
+    # Uncomment to train on the whole dataset
+    train_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_data.npy")
+    train_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_labels.npy")
+    test_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/test_data.npy")
+    test_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/test_labels.npy")
+    
+    # Uncomment to train on the second half and test on a second 
+    #all_train_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_data.npy")
+    #all_train_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_labels.npy")
+    #print("Splitting data into two halves...")
+    #train_data, train_labels, test_data, test_labels = DataHandler.split(0.5, all_train_data, all_train_labels)    
+
+    hmmcl = HMMClassifier()
+    model_pos, model_neg = hmmcl.train(70, 5, train_data, train_labels)
+    print hmmcl.test(model_pos, model_neg, test_data, test_labels)
+    #hmmcl.find_best_parameter(0.7, range(20,31), 10, 5, train_data, train_labels)
+
