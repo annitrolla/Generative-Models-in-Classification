@@ -14,7 +14,7 @@ from LSTM.lstm_classifier import LSTMClassifier
 import numpy as np
                                    
 def ecoglstm(lstmsize, dropout, optim):
-    batch_size = 16
+    batch_size = 8
 
     print("Reading data...")
     data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_data.npy")
