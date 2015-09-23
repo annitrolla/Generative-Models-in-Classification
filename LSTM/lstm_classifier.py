@@ -95,12 +95,20 @@ class LSTMClassifier:
 if __name__ == '__main__':
 
     print("Reading data...")
-    train_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_data.npy")
-    train_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_labels.npy")
-    test_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/test_data.npy")
-    test_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/test_labels.npy")
+
+    # Uncomment to test on the test data
+    #train_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_data.npy")
+    #train_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_labels.npy")
+    #test_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/test_data.npy")
+    #test_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/test_labels.npy")
     
-    lstmcl = LSTMClassifier(2000, 0.8, 'adagrad', nepoch=20)
+    # Uncomment to test on the second half data
+    all_train_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_data.npy")
+    all_train_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_labels.npy")
+    print("Splitting data in two halves...")
+    train_data, train_labels, test_data, test_labels = DataHandler.split(0.5, all_train_data, all_train_labels)
+
+    lstmcl = LSTMClassifier(2000, 0.8, 'adagrad', nepoch=10)
     model_pos, model_neg = lstmcl.train(train_data, train_labels)
     print(lstmcl.test(model_pos, model_neg, test_data, test_labels))
 
