@@ -87,15 +87,15 @@ class Fourier:
 if __name__ == '__main__':
 
     print "Loading training data..."
-    train_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_data.npy")
+    train_data = np.load("/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/train_data.npy")
     print "Loading test data..."
-    test_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/test_data.npy")
+    test_data = np.load("/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/test_data.npy")
 
     fourier_data = Fourier.data_to_fourier(train_data)
-    np.save('/storage/hpc_anna/GMiC/Data/ECoG/fourier/train_data.npy', fourier_data)
+    np.save('/storage/hpc_anna/GMiC/Data/ECoGmixed/fourier/train_data.npy', fourier_data)
 
     fourier_data = Fourier.data_to_fourier(test_data)
-    np.save('/storage/hpc_anna/GMiC/Data/ECoG/fourier/test_data.npy', fourier_data)
+    np.save('/storage/hpc_anna/GMiC/Data/ECoGmixed/fourier/test_data.npy', fourier_data)
     
 
             
