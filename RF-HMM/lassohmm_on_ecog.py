@@ -10,6 +10,7 @@ from DataNexus.datahandler import DataHandler
 from DataNexus.fourier import Fourier
 from HMM.hmm_classifier import HMMClassifier 
 from sklearn.ensemble import RandomForestClassifier
+from sklearn import linear_model
 import cPickle
 
 # parameters
@@ -50,17 +51,17 @@ print "Merging Fourier features and HMM-based ratios..."
 enriched_sh_data = np.hstack((fourier_sh_data, sh_ratios.reshape(len(sh_ratios), 1)))
 enriched_test_data = np.hstack((fourier_test_data, test_ratios.reshape(len(test_ratios), 1)))
 
-# train RF on the enriched dataset
-print "Training RF on the merged dataset..."
-rf = RandomForestClassifier(n_estimators=500)
-rf.fit(enriched_sh_data, sh_labels)
+# train LASSO on the enriched dataset
+print "Training lasso on the merged dataset..."
+lasso = linear_model.Lasso(alpha = 0.1)
+lasso.fit(enriched_sh_data, sh_labels)
 
 # storing model into a file
 print "Storing model into a file..."
-with open("../../Results/models/rfhmm.pkl", "w") as f:
-    cPickle.dump(rf, f)
+with open("../../Results/models/lassohmm.pkl", "w") as f:
+    cPickle.dump(lasso, f)
 
 # test RF on the test set
 print "Testing the final model..."
-print str(rf.score(enriched_sh_data, sh_labels)) + " - accuracy on train data"
-print str(rf.score(enriched_test_data, test_labels)) + " - accuracy on test data"
+print str(lasso.score(enriched_sh_data, sh_labels)) + " - accuracy on train data"
+print str(lasso.score(enriched_test_data, test_labels)) + " - accuracy on test data"
