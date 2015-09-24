@@ -31,4 +31,5 @@ however if you have one instance of mongodb running on one node, then you cannot
 import HMM.hmm_classifier
 reload(HMM.hmm_classifier)
 from HMM.hmm_classifier import HMMClassifier
+hmmcl = HMMClassifier()
 ```
