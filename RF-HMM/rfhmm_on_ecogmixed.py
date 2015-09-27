@@ -10,6 +10,7 @@ from DataNexus.datahandler import DataHandler
 from DataNexus.fourier import Fourier
 from HMM.hmm_classifier import HMMClassifier 
 from sklearn.ensemble import RandomForestClassifier
+import cPickle
 
 # parameters
 NSTATES = 30
@@ -53,6 +54,11 @@ enriched_test_data = np.hstack((fourier_test_data, test_ratios.reshape(len(test_
 print "Training RF on the merged dataset..."
 rf = RandomForestClassifier(n_estimators=500)
 rf.fit(enriched_sh_data, sh_labels)
+
+# store the model
+print "Storing the model..."
+with open('../../Results/models/rfhmm.pkl', 'w') as f:
+    cPickle.dump(rf, f)
 
 # test RF on the test set
 print "Testing the final model..."
