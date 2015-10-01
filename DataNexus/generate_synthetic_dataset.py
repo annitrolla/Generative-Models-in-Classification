@@ -17,42 +17,49 @@ from HMM.hmm_classifier import HMMClassifier
 # parameters
 nsamples = 1000
 nfeatures = 10
-nseqfeatures = 10
+nseqfeatures = 20
 seqlen = 30
 
 s_pos_mu = 0.0
 s_pos_sd = 1.0
 s_neg_mu = 5.0
 s_neg_sd = 1.0
-s_error_ratio = 0.3
+
+error_ratio = 0.3
 
 # generate static features
-correct_samples = np.random.normal(s_pos_mu, s_pos_sd, (nsamples * (1.0 - s_error_ratio), nfeatures))
-wrong_samples = np.random.normal(s_neg_mu, s_neg_sd, (nsamples * s_error_ratio, nfeatures))
+correct_samples = np.random.normal(s_pos_mu, s_pos_sd, (nsamples * (1.0 - error_ratio), nfeatures))
+wrong_samples = np.random.normal(s_neg_mu, s_neg_sd, (nsamples * error_ratio, nfeatures))
 static_pos = np.vstack((correct_samples, wrong_samples))
 pos_labels = [1] * nsamples
 
-correct_samples = np.random.normal(s_neg_mu, s_neg_sd, (nsamples * (1.0 - s_error_ratio), nfeatures))
-wrong_samples = np.random.normal(s_pos_mu, s_pos_sd, (nsamples * s_error_ratio, nfeatures))
+correct_samples = np.random.normal(s_neg_mu, s_neg_sd, (nsamples * (1.0 - error_ratio), nfeatures))
+wrong_samples = np.random.normal(s_pos_mu, s_pos_sd, (nsamples * error_ratio, nfeatures))
 static_neg = np.vstack((correct_samples, wrong_samples))
 neg_labels = [0] * nsamples
 
 # generate dynamic features
-pos_coefs = np.random.uniform(-1.0, 1.0, seqlen - 1)
-neg_coefs = np.random.uniform(-2.0, 2.0, seqlen - 1)
-dynamic_pos = np.empty((nsamples, nfeatures, seqlen))
-dynamic_neg = np.empty((nsamples, nfeatures, seqlen))
+pos_coefs = np.random.normal(0.0, 2.0, seqlen - 1)
+neg_coefs = np.random.normal(1.0, 1.0, seqlen - 1)
+dynamic_pos = np.empty((nsamples, nseqfeatures, seqlen))
+dynamic_neg = np.empty((nsamples, nseqfeatures, seqlen))
 for i in range(nsamples):
-    dynamic_pos[i, :, 0] = np.random.uniform(-1.0, 1.0, nfeatures)
-    dynamic_neg[i, :, 0] = np.random.uniform(-1.0, 1.0, nfeatures)
+    dynamic_pos[i, :, 0] = np.random.uniform(-1.0, 1.0, nseqfeatures)
+    dynamic_neg[i, :, 0] = np.random.uniform(-1.0, 1.0, nseqfeatures)
 for s in range(nsamples):
     for t in range(1, seqlen):
         dynamic_pos[s, :, t] = pos_coefs[t - 1] * dynamic_pos[s, :, t - 1] 
         dynamic_neg[s, :, t] = neg_coefs[t - 1] * dynamic_neg[s, :, t - 1]
 
+# introduce errors into the dataset so that some percentage of samples is misclassified
+dynamic_data = np.vstack((dynamic_pos, dynamic_neg))
+dynamic_labels = np.hstack((pos_labels, neg_labels))
+error_idx = np.random.choice(range(0, 2 * nsamples), size=np.round(2 * nsamples * error_ratio, 0), replace=False)
+dynamic_labels[error_idx] = 0**dynamic_labels[error_idx]
+
 # sanity check: classification
-data = np.vstack((dynamic_pos, dynamic_neg))
-labels = np.hstack((pos_labels, neg_labels))
+data = dynamic_data
+labels = dynamic_labels
 train_idx = np.random.choice(range(0, 2 * nsamples), size=np.round(2 * nsamples * 0.7, 0), replace=False)
 val_idx = list(set(range(0, 2 * nsamples)) - set(train_idx))
 train_data = data[train_idx, :]
@@ -61,9 +68,8 @@ val_data = data[val_idx, :]
 val_labels = labels[val_idx]
 
 hmmcl = HMMClassifier()
-model_pos, model_neg = hmmcl.train(10, 3, train_data, train_labels)
+model_pos, model_neg = hmmcl.train(10, 10, train_data, train_labels)
 print hmmcl.test(model_pos, model_neg, val_data, val_labels)
-
 
 """
 rf = RandomForestClassifier(n_estimators=100)
