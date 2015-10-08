@@ -40,7 +40,7 @@ print "Random Forest with static features on validation set: %.4f" % rf.score(st
 hmmcl = HMMClassifier()
 model_pos, model_neg = hmmcl.train(3, 10, dynamic_train, labels_train)
 print "HMM with dynamic features on validation set: %.4f" % hmmcl.test(model_pos, model_neg, dynamic_val, labels_val)
-
+"""
 print "\nInital probabilities:"
 print model_pos.startprob_
 print model_neg.startprob_
@@ -53,7 +53,7 @@ print model_neg.means_
 print "\nState covariation matrices:"
 print model_pos.covars_
 print model_neg.covars_
-
+"""
 #
 # Try to classify dynamic data with a discriminative model
 #

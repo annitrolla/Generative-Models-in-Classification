@@ -17,15 +17,15 @@ import statsmodels.tsa.arima_process as ap
 nsamples = 10000
 nq = nsamples / 4
 nfeatures = 10
-nseqfeatures = 20
+nseqfeatures = 100
 seqlen = 30
 
 orders = [np.random.randint(1, 5, 4) for rep in range(nseqfeatures)]
 
-arparams_pos = [np.hstack((1.0, np.random.normal(0.0, 1.0, ord[0]))) for ord in orders]
-arparams_neg = [np.hstack((1.0, np.random.normal(0.0, 1.0, ord[1]))) for ord in orders]
-maparams_pos = [np.hstack((1.0, np.random.uniform(-0.1, 0.1, ord[2]))) for ord in orders]
-maparams_neg = [np.hstack((1.0, np.random.uniform(-0.1, 0.1, ord[3]))) for ord in orders]
+arparams_pos = [np.hstack((1.0, np.random.uniform(-0.1, 0.1, ord[0]))) for ord in orders]
+arparams_neg = [np.hstack((1.0, np.random.uniform(-0.1, 0.1, ord[1]))) for ord in orders]
+maparams_pos = [np.hstack((1.0, np.random.uniform(-0.5, 0.5, ord[2]))) for ord in orders]
+maparams_neg = [np.hstack((1.0, np.random.uniform(-0.5, 0.5, ord[3]))) for ord in orders]
 
 #
 # Generate data
