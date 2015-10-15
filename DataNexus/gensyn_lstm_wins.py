@@ -13,10 +13,15 @@ Generate a dataset with the following properties
 import numpy as np
 import statsmodels.tsa.arima_process as ap
 
-# parameters
-nsamples = 1000
+# deafult parameters to achieve
+#   RF: ~0.75
+#   HMM: ~0.65
+#   LSTM: ~0.75
+#   RF+HMM: ~0.85
+#   RF+LSTM: ~0.99
+nsamples = 10000
 nq = nsamples / 4
-nfeatures = 10
+nfeatures = 50
 nseqfeatures = 100
 seqlen = 30
 
@@ -36,10 +41,23 @@ print 'Generating data...'
 labels = np.array([1] * nq + [0] * nq + [1] * nq + [0] * nq)
 
 # generate static features
-static = np.vstack((np.random.normal(5.0, 1.0, (nq, nfeatures)),
-                    np.random.normal(0.0, 1.0, (nq, nfeatures)),
-                    np.random.normal(0.0, 1.0, (nq, nfeatures)),
-                    np.random.normal(0.0, 1.0, (nq, nfeatures))))
+#static = np.vstack((np.random.normal(5.0, 1.0, (nq, nfeatures)),
+#                    np.random.normal(0.0, 1.0, (nq, nfeatures)),
+#                    np.random.normal(0.0, 1.0, (nq, nfeatures)),
+#                    np.random.normal(0.0, 1.0, (nq, nfeatures))))
+
+# generate distribution parameters for the static features
+smean_pos = np.random.uniform(0, 2, nfeatures)
+ssigm_pos = [1.0] * nfeatures
+smean_neg = np.random.uniform(0, 2, nfeatures)
+ssigm_neg = [1.0] * nfeatures
+
+# generate static features
+static_q1 = np.vstack([np.random.normal(smean_pos[f], ssigm_pos[f], nq) for f in range(nfeatures)])
+static_q2 = np.vstack([np.random.normal(smean_neg[f], ssigm_neg[f], nq) for f in range(nfeatures)])
+static_q3 = np.vstack([np.random.normal(smean_neg[f], ssigm_neg[f], nq) for f in range(nfeatures)])
+static_q4 = np.vstack([np.random.normal(smean_neg[f], ssigm_neg[f], nq) for f in range(nfeatures)])
+static = np.vstack((static_q1.T, static_q2.T, static_q3.T, static_q4.T))
 
 # generate dynamic features
 dynamic_q1 = np.vstack([ap.arma_generate_sample(arparams_pos[i % nseqfeatures], maparams_pos[i % nseqfeatures], seqlen)
