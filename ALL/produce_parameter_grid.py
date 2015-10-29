@@ -18,7 +18,7 @@ nseqfeatures = [1, 5, 10, 20, 30]
 seqlen = [3, 10, 30, 50]
 
 prs = np.array(expandgrid(nsamples, nfeatures, nseqfeatures, seqlen)).T
-with open('grid.txt', 'w') as f:
+with open('../../Results/grid.txt', 'w') as f:
     for p in prs:
         f.write('%d, %d, %d, %d\n' % (p[0], p[1], p[2], p[3]))
 f.close()
