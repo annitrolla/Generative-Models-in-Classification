@@ -56,7 +56,7 @@ class LSTMClassifier:
         model.compile(loss='mean_squared_error', optimizer=self.optim) # Spearmint parameter: optimizer
 
         print("Training...")
-        model.fit(X_train, y_train, batch_size=batch_size, nb_epoch=self.nepoch, validation_split=0.3, show_accuracy=True)       
+        model.fit(X_train, y_train, batch_size=batch_size, nb_epoch=self.nepoch, show_accuracy=True)       
         
         return model
     
