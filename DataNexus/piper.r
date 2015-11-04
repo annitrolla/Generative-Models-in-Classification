@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
 
+# To be run on atlas
+
 library(data.table)
 library(ggplot2)
 library(plyr)
@@ -32,7 +34,7 @@ dynamic_dt_prep <- function(data, seq_length, nm=nms){
   return(dt_wide)
 }
 
-dt  <- fread("/home/hpc_anna1985/Research/Plumbr/corrected_dt.txt", header=FALSE)
+dt  <- fread("dt  <- fread("/gpfs/hpchome/etais/hpc_anna1985/Research/Generative-Models-in-Classification/Data/corrected_dt.txt", header=FALSE)
 nms <- as.character(c("accountId, sessionId, javaVersion,cpuCoreCount,maxAvailableMemory,timestamp,duration,gcCause,gcAction,gcName,PS Perm Gen used before,PS Perm Gen max before,PS Eden Space used before,PS Eden Space max before,PS Old Gen used before,PS Old Gen max before,PS Survivor Space used before,PS Survivor Space max before,PS Perm Gen used after,PS Perm Gen max after,PS Eden Space used after,PS Eden Space max after,PS Old Gen used after,PS Old Gen max after,PS Survivor Space used after,PS Survivor Space max after,allocationRate,promotionRate,maturityRate"))
 nms <- strsplit(nms, split = ",")[[1]]
 corrected_names <- gsub(" ", "", nms, fixed = TRUE)
@@ -44,10 +46,6 @@ dt$timestamp <- as.numeric(dt$timestamp)
 gc_overhead <- ddply(dt, .(sessionId), summarize, gc_overhead=sum(duration)/(max(timestamp)-min(timestamp)))
 gc_overhead$gc_overhead <- ifelse(is.finite(gc_overhead$gc_overhead)!=T, 0, gc_overhead$gc_overhead)
 gc_overhead <- subset(gc_overhead, gc_overhead<=1)
-
-# labels
-gc_overhead$label <- ifelse(gc_overhead$gc_overhead>=0.00001,1,0)
-gc_overhead$index <- c(1:nrow(gc_overhead))
 
 # static
 #sds <- aggregate(data=dt_sample, .~sessionId, sd)
@@ -61,29 +59,33 @@ dt_static <- merge(dt_static_agg, gc_overhead[,c(1,4)], by="sessionId")
 dt_static$javaVersion <- ifelse(dt_static$javaVersion==1.7,1,2)
 dt_static$PSPermGenmaxbefore <- ifelse(dt_static$PSPermGenmaxbefore==-1,0,dt_static$PSPermGenmaxbefore)
 dt_static$PSPermGenmaxafter <- ifelse(dt_static$PSPermGenmaxafter==-1,0,dt_static$PSPermGenmaxafter)
-dt_static_final <- dt_static[,-c(1,9),with=F]
 
-# ToDO:
-# labels based on gc_overhead for each session
-# for each session data: all numeric?
-# static and dynamic separate
-# how many events to take?
-# each session - one line, list all features for one timestamp, then for another timestamp, etc
+dt$maturityRate <- NULL
 dt_wide <- dynamic_dt_prep(dt, seq_length=10)
 dt_wide <- merge(dt_wide, gc_overhead[,c(1,4)], by="sessionId")
 dt_dynamic <- dt_wide[order(dt_wide$index, decreasing=F),]
 
+#only those that are smaller than pre-defined length are kept
+
+dt_static <- subset(dt_static, sessionId %in% dt_dynamic$sessionId)
+dt_static_final <- dt_static[,-c(1,9),with=F]
+
+# labels
+gc_overhead$label <- ifelse(gc_overhead$gc_overhead>=0.0065,1,0)
+gc_overhead$index <- c(1:nrow(gc_overhead))
+gc_overhead <- subset(gc_overhead, sessionId %in% dt_dynamic$sessionId)
+
+dt_dynamic$index <- NULL
+dt_dynamic$sessionId <- NULL
+
 # writing results
-# check consistency
-print(dim(as.data.frame(gc_overhead$label)))
-print(dim(dt_static_final))
-print(dim(dt_dynamic))
-
-write.table(as.data.frame(gc_overhead$label), "/storage/hpc_anna/GMiC/Data/Piper/labels_piper.txt",
+write.table(as.data.frame(gc_overhead$label), "/gpfs/hpchome/etais/hpc_anna1985/Research/Generative-Models-in-Classification/Data/labels_piper.txt",
             col.names=F, row.names=F, sep=',',quote=F)
 
-write.table(dt_static_final, "/storage/hpc_anna/GMiC/Data/Piper/static_piper.txt",
+write.table(dt_static_final, "/gpfs/hpchome/etais/hpc_anna1985/Research/Generative-Models-in-Classification/Data/static_piper.txt",
             col.names=F, row.names=F, sep=',',quote=F)
 
-write.table(dt_wide_filtered, "/storage/hpc_anna/GMiC/Data/Piper/dynamic_piper.txt",
+write.table(dt_dynamic, "/gpfs/hpchome/etais/hpc_anna1985/Research/Generative-Models-in-Classification/Data/dynamic_piper.txt",
             col.names=F, row.names=F, sep=',',quote=F)
+
+
