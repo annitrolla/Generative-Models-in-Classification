@@ -5,6 +5,7 @@ handles functions required for hmm classification
 
 import numpy as np
 from hmmlearn import hmm
+from scipy.stats import mode
 from DataNexus.datahandler import DataHandler
 
 class HMMClassifier:
@@ -34,7 +35,31 @@ class HMMClassifier:
             return acc, pred
         else:
             return acc
-    
+   
+    def accuracy_per_feature(self, data, labels, models_pos, models_neg):
+        
+        # variables for convenience
+        nsamples = data.shape[0]
+        nseqfeatures = data.shape[1]
+        seqlen = data.shape[2]
+
+        # compute predictions for each model pair
+        votes = np.zeros((nseqfeatures, nsamples))
+        for fid in range(nseqfeatures):
+            fdata = data[:, fid, :].reshape((nsamples, 1, seqlen))
+            fdata = self.tensor_to_list(fdata)
+            accuracy, predictions = self.accuracy(fdata, labels, models_pos[fid], models_neg[fid], True)
+            print '  Accuracy with feature %d is %.4f' % (fid, accuracy)
+            votes[fid, :] = predictions
+
+        # for each sample take the majority vote
+        preds = mode(votes, axis=0)[0][0]
+
+        # compute accuracy of the majority voted predictions
+        accuracy = np.sum(preds == labels) / float(len(labels))
+
+        return accuracy
+ 
     def find_best_parameter(self, ratio, hdn_nstates_list, niter, nrepetitions, data, labels):
         """
         parameter search over number of hidden states
@@ -87,6 +112,42 @@ class HMMClassifier:
         ratios = np.empty(len(data))
         for i in range(len(data)):
             ratios[i] = model_pos.score(data[i]) - model_neg.score(data[i])
+        return ratios
+
+    def train_per_feature(self, nstates, niter, data, labels):
+        
+        # variables for convenience
+        nsamples = data.shape[0]
+        nseqfeatures = data.shape[1]
+        seqlen = data.shape[2]
+
+        # train a pair of models for each sequential feature
+        models_pos = [None] * nseqfeatures
+        models_neg = [None] * nseqfeatures
+        for fid in range(nseqfeatures):
+            print 'Training pair of models for feature %d/%d...' % (fid, nseqfeatures)
+            fdata = data[:, fid, :].reshape((nsamples, 1, seqlen))
+            model_pos, model_neg = self.train(nstates, niter, fdata, labels)
+            models_pos[fid] = model_pos
+            models_neg[fid] = model_neg
+
+        return models_pos, models_neg
+ 
+    def test_per_feature(self, models_pos, models_neg, data, labels):
+        return self.accuracy_per_feature(data, labels, models_pos, models_neg)
+
+    def pos_neg_ratios_per_feature(models_pos, models_neg, data):
+        
+        # variables for convenience
+        nsamples = data.shape[0]
+        nseqfeatures = data.shape[1]
+        seqlen = data.shape[2]
+
+        # extract ratios for each feature
+        ratios = np.zeros(nseqfeatures, nsamples)
+        for fid in range(nseqfeatures):
+            ratios[fid, :] = self.pos_neg_ratios(models_pos[fid], models_neg[fid], data[:, fid, :].reshape((nsamples, 1, seqlen)))
+
         return ratios
 
 if __name__ == '__main__':

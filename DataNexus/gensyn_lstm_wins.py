@@ -78,7 +78,7 @@ def generate_lstm_wins(nsamples, nfeatures, nseqfeatures, seqlen):
    
 
 if __name__ == "__main__":
-    train_static, train_dynamic, test_static, test_dynamic, train_labels, test_labels = generate_lstm_wins(1000, 50, 100, 30)
+    train_static, train_dynamic, test_static, test_dynamic, train_labels, test_labels = generate_lstm_wins(5000, 50, 50, 70)
     print 'Storing the dataset...'
     np.save('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/train_static.npy', train_static)
     np.save('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/train_dynamic.npy', train_dynamic)
