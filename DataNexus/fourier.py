@@ -27,7 +27,8 @@ class Fourier:
         fftcutoff = 150
 
         # one bin should correspond to 1Hz regardless of windows size and sampling frequency
-        bins = [(start, start + binstep - 1) for start in range(0, fftcutoff, binstep)]
+        #bins = [(start, start + binstep - 1) for start in range(0, fftcutoff, binstep)]
+        bins = [(1, 3), (4, 7), (8, 15), (16, 31), (32, 100)]
 
         # transform data
         channels = rawdata.shape[1]
