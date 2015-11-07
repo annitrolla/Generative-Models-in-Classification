@@ -27,6 +27,12 @@ dynamic_val = np.load('/storage/hpc_anna/GMiC/Data/Piper/preprocessed/test_dynam
 labels_train = np.load('/storage/hpc_anna/GMiC/Data/Piper/preprocessed/train_labels.npy')
 labels_val = np.load('/storage/hpc_anna/GMiC/Data/Piper/preprocessed/test_labels.npy')
 
+dynamic_train[:,[3,4,5,6,7,8,9,10,11,12,13,14],:] = dynamic_train[:,[3,4,5,6,7,8,9,10,11,12,13,14],:]/10000000.0
+dynamic_val[:,[3,4,5,6,7,8,9,10,11,12,13,14],:] = dynamic_val[:,[3,4,5,6,7,8,9,10,11,12,13,14],:]/10000000.0
+
+dynamic_train = dynamic_train[:,[3,6,7,8,9,10,11,12,13,14],:]
+dynamic_val = dynamic_val[:,[3,6,7,8,9,10,11,12,13,14],:]
+
 # static data with RF
 rf = RandomForestClassifier(n_estimators=rf_estimators, n_jobs=-1)
 rf.fit(static_train, labels_train)
@@ -34,7 +40,7 @@ print "Random Forest with static features on validation set: %.4f" % rf.score(st
 
 # dynamic data with HMM
 hmmcl = HMMClassifier()
-model_pos, model_neg = hmmcl.train(2, 10, dynamic_train, labels_train)
+model_pos, model_neg = hmmcl.train(3, 10, dynamic_train, labels_train)
 print "HMM with dynamic features on validation set: %.4f" % hmmcl.test(model_pos, model_neg, dynamic_val, labels_val)
 
 # dynamic data with RF
