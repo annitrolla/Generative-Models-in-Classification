@@ -24,7 +24,7 @@ The dafault way is
 however if you have one instance of mongodb running on one node, then you cannot run another one on the same node, so once you have initiated one run, use `squeue` to see which unit your task got allocated to and exclude it from the other run (all this matters is you run two Spearmint experiments in parallel). Say your first experiments got allocated to the node `idu38`, then your second experiment will be ran as  
 `srun --exclude=idu38 --partition=gpu --gres=gpu:1 --constraint=K20 --mem=20000 runecogbin.sh`
 
-### Tips & Trick
+### Tips & Tricks
 
 ###### Reload class in an interactive Python shell
 ```
