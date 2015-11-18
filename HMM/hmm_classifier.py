@@ -98,7 +98,8 @@ class HMMClassifier:
         success = False
         while not success:
             try:
-	        model_pos = hmm.GaussianHMM(nstates, covariance_type=covtype, n_iter=niter)
+                print "Training with covariance type %s" % covtype
+                model_pos = hmm.GaussianHMM(nstates, covariance_type=covtype, n_iter=niter)
                 model_pos.fit(train_pos)
                 print "Start training the negative model..."
                 model_neg = hmm.GaussianHMM(nstates, covariance_type=covtype, n_iter=niter)

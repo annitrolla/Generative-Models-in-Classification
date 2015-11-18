@@ -15,7 +15,7 @@ test_labels = np.load("/storage/hpc_anna/GMiC/Data/syn_lstm_wins/test_labels.npy
 
 print "Training HMM classifier..."
 hmmcl = HMMClassifier()
-model_pos, model_neg = hmmcl.train(3, 10, train_data, train_labels)
+model_pos, model_neg = hmmcl.train(2, 2, 'full', train_data, train_labels)
 print hmmcl.test(model_pos, model_neg, test_data, test_labels)
 
 
