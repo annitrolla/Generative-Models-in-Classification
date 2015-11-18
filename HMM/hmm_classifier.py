@@ -95,10 +95,10 @@ class HMMClassifier:
         train_pos = self.tensor_to_list(data[labels==1, :, :])
         train_neg = self.tensor_to_list(data[labels==0, :, :])
         print "Start training the positive model..."
-        model_pos = hmm.GaussianHMM(nstates, covariance_type="full", n_iter=niter)
+        model_pos = hmm.GaussianHMM(nstates, covariance_type="diag", n_iter=niter)
         model_pos.fit(train_pos)
         print "Start training the negative model..."
-        model_neg = hmm.GaussianHMM(nstates, covariance_type="full", n_iter=niter)
+        model_neg = hmm.GaussianHMM(nstates, covariance_type="diag", n_iter=niter)
         model_neg.fit(train_neg)
         return model_pos, model_neg
 
