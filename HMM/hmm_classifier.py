@@ -95,11 +95,25 @@ class HMMClassifier:
         train_pos = self.tensor_to_list(data[labels==1, :, :])
         train_neg = self.tensor_to_list(data[labels==0, :, :])
         print "Start training the positive model..."
-        model_pos = hmm.GaussianHMM(nstates, covariance_type=covtype, n_iter=niter)
-        model_pos.fit(train_pos)
-        print "Start training the negative model..."
-        model_neg = hmm.GaussianHMM(nstates, covariance_type=covtype, n_iter=niter)
-        model_neg.fit(train_neg)
+        success = False
+        while not success:
+            try:
+	        model_pos = hmm.GaussianHMM(nstates, covariance_type=covtype, n_iter=niter)
+                model_pos.fit(train_pos)
+                print "Start training the negative model..."
+                model_neg = hmm.GaussianHMM(nstates, covariance_type=covtype, n_iter=niter)
+                model_neg.fit(train_neg)
+                success = True 
+            except:
+                if covtype == 'full':
+                    covtype = 'diag'
+                elif covtype == 'diag':
+                    covtype = 'tied'
+                elif covtype == 'tied':
+                    covtype = 'spherical'
+                else:
+                    print 'Error: HMM sucks'
+                    success = True
         return model_pos, model_neg
 
     def test(self, model_pos, model_neg, data, labels):
