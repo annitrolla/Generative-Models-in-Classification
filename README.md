@@ -1,7 +1,7 @@
 # Generative Models in Classification
 
 ### Basic Pipeline
-<img src="Documentation/Figures/basicpipeline.png" width="728px" />
+<img src="Documentation/Figures/models_eleven.jpg" width="728px" />
 
 ### Folder structure
 ```
