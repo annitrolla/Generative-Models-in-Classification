@@ -91,14 +91,14 @@ class HMMClassifier:
                 print nstates, np.mean(accuracy_results[nstates]), np.std(accuracy_results[nstates])
                 f.write("%d, %s\n" % (nstates, ", ".join([str(x) for x in accuracy_results[nstates]])))
     
-    def train(self, nstates, niter, data, labels):
+    def train(self, nstates, niter, covtype, data, labels):
         train_pos = self.tensor_to_list(data[labels==1, :, :])
         train_neg = self.tensor_to_list(data[labels==0, :, :])
         print "Start training the positive model..."
-        model_pos = hmm.GaussianHMM(nstates, covariance_type="diag", n_iter=niter)
+        model_pos = hmm.GaussianHMM(nstates, covariance_type=covtype, n_iter=niter)
         model_pos.fit(train_pos)
         print "Start training the negative model..."
-        model_neg = hmm.GaussianHMM(nstates, covariance_type="diag", n_iter=niter)
+        model_neg = hmm.GaussianHMM(nstates, covariance_type=covtype, n_iter=niter)
         model_neg.fit(train_neg)
         return model_pos, model_neg
 
@@ -113,6 +113,17 @@ class HMMClassifier:
         for i in range(len(data)):
             ratios[i] = model_pos.score(data[i]) - model_neg.score(data[i])
         return ratios
+
+    def predict_log_proba(self, model_pos, model_neg, data):
+        """
+        Return class log-probabilities of each sample in the data
+        """
+        data = self.tensor_to_list(data)
+        probs = np.empty((len(data), 2))
+        for i in range(len(data)):
+            probs[i, :] = (model_pos.score(data[i]), model_neg.score(data[i]))
+        return probs
+
 
     def train_per_feature(self, nstates, niter, data, labels):
         

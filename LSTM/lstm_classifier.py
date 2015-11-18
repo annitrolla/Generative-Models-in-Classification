@@ -72,18 +72,20 @@ class LSTMClassifier:
         
         return model_pos, model_neg
 
-    def pos_neg_ratios(self, model_pos, model_neg, data):
+    def predict_mse(self, model_pos, model_neg, data):
         data = np.transpose(data, (0, 2, 1))
         X, y = self.sequence_lag(data)
         predicted_pos = model_pos.predict(X)
         predicted_neg = model_neg.predict(X)
         mse_pos = np.sum((predicted_pos - y)**2, axis=(1,2)) / (y.shape[1] * y.shape[2])
         mse_neg = np.sum((predicted_neg - y)**2, axis=(1,2)) / (y.shape[1] * y.shape[2])
-        
+        return mse_pos, mse_neg
+
+    def pos_neg_ratios(self, model_pos, model_neg, data):
         # ratio shows how much the positive model is better than the negative one, thus, we take inverse of mse
         # log transforms the measure to be symmetrical around zero
+        mse_pos, mse_neg = self.predict_mse(model_pos, model_neg, data)
         ratios = np.log(mse_neg / mse_pos) 
-        
         return ratios
 
     def test(self, model_pos, model_neg, data, labels):
