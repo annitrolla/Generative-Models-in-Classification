@@ -139,6 +139,18 @@ class HMMClassifier:
             probs[i, :] = (model_pos.score(data[i]), model_neg.score(data[i]))
         return probs
 
+    def state_visits(self, model_pos, model_neg, data):
+        """
+        For each data sample estimate the number of times each HMM state is
+        visited under the positive and the negative model
+        """
+        data = self.tensor_to_list(data)
+        pos_visits = np.empty((len(data), model_pos.n_components))
+        neg_visits = np.empty((len(data), model_neg.n_components))
+        for i in range(len(data)):
+            pos_visits[i, :] = np.bincount(model_pos.predict(data[i]))
+            neg_visits[i, :] = np.bincount(model_neg.predict(data[i]))
+        return pos_visits, neg_visits
 
     def train_per_feature(self, nstates, niter, data, labels):
         
