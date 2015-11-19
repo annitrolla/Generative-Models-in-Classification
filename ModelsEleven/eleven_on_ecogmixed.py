@@ -12,27 +12,27 @@ from HMM.hmm_classifier import HMMClassifier
 from LSTM.lstm_classifier import LSTMClassifier 
 
 # general parameters
-nfolds = 3 #5
-nestimators = 100
-nhmmstates = 2 #3
-nhmmiter = 2 #10
+nfolds = 5
+nestimators = 300
+nhmmstates = 3
+nhmmiter = 10
 hmmcovtype = "full"  # options: full, diag, spherical
 lstmsize = 2000
 lstmdropout = 0.5
 lstmoptim = 'adagrad'
-lstmnepochs = 2 #20
+lstmnepochs = 20
 
 
 #
 # Load the dataset
 #
 print 'Loading the dataset..'
-static_train = np.load('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/train_static.npy')
-dynamic_train = np.load('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/train_dynamic.npy')
-static_val = np.load('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/test_static.npy')
-dynamic_val = np.load('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/test_dynamic.npy')
-labels_train = np.load('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/train_labels.npy')
-labels_val = np.load('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/test_labels.npy')
+static_train = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/fourier/train_data.npy')
+dynamic_train = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/train_data.npy')
+static_val = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/fourier/test_data.npy')
+dynamic_val = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/test_data.npy')
+labels_train = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/train_labels.npy')
+labels_val = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/test_labels.npy')
 
 
 #
