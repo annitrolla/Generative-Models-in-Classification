@@ -11,7 +11,7 @@ import pandas as pd
 import random
 
 # parameters
-seqlen = 100
+seqlen = 70
 
 
 # load data
@@ -32,7 +32,7 @@ gc_overhead.reset_index(inplace=True)
 gc_overhead.columns = ['sessionId', 'gcOverhead']
 
 # set positive label if overhead is larger than 5%
-gc_overhead['label'] = (gc_overhead['gcOverhead'] > 0.10) * 1
+gc_overhead['label'] = (gc_overhead['gcOverhead'] > 0.05) * 1
 
 
 #
