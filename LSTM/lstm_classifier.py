@@ -15,6 +15,7 @@ from keras.layers.core import Dense, Dropout, Activation
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM, GRU
 from DataNexus.datahandler import DataHandler
+from sklearn.preprocessing import OneHotEncoder
 
 class LSTMClassifier:
     
@@ -94,25 +95,55 @@ class LSTMClassifier:
         accuracy = np.sum(predictions == labels) / float(len(labels))
         return accuracy
 
+
+class LSTMDiscriminative:
+    
+    def __init__(self, lstmsize, dropout, optim, nepoch, batch_size):
+        self.lstmsize = lstmsize
+        self.dropout = dropout
+        self.optim = optim
+        self.nepoch = nepoch
+        self.batch_size = batch_size
+
+    def train(self, data, labels):
+        print('Training LSTMDescriminative model')
+        data = np.transpose(data, (0, 2, 1))
+
+        print('    Building the model...')
+        model = Sequential()
+        model.add(LSTM(data.shape[2], self.lstmsize, return_sequences=False))
+        model.add(Dropout(self.dropout))
+        model.add(Dense(self.lstmsize, 1))
+        model.add(Activation('sigmoid'))
+
+        print('    Compiling the model...')
+        model.compile(loss='binary_crossentropy', optimizer=self.optim)
+
+        print("    Training the model...")
+        model.fit(data, labels, batch_size=self.batch_size, nb_epoch=self.nepoch, show_accuracy=True)
+
+        return model 
+
+    def test(self, model, data, labels):
+        data = np.transpose(data, (0, 2, 1))
+        loss, accuracy = model.evaluate(data, labels, batch_size=self.batch_size, validation_split=0.3, show_accuracy=True)
+        return accuracy
+
+
 if __name__ == '__main__':
 
-    print("Reading data...")
+    # load the data
+    static_train = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/fourier/train_data.npy')
+    dynamic_train = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/train_data.npy')
+    static_val = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/fourier/test_data.npy')
+    dynamic_val = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/test_data.npy')
+    labels_train = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/train_labels.npy')
+    labels_val = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/test_labels.npy')
 
-    # Uncomment to test on the test data
-    #train_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_data.npy")
-    #train_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_labels.npy")
-    #test_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/test_data.npy")
-    #test_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/test_labels.npy")
-    
-    # Uncomment to test on the second half data
-    all_train_data = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_data.npy")
-    all_train_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoG/preprocessed/train_labels.npy")
-    print("Splitting data in two halves...")
-    train_data, train_labels, test_data, test_labels = DataHandler.split(0.5, all_train_data, all_train_labels)
-
-    lstmcl = LSTMClassifier(2000, 0.8, 'adagrad', nepoch=10)
-    model_pos, model_neg = lstmcl.train(train_data, train_labels)
-    print(lstmcl.test(model_pos, model_neg, test_data, test_labels))
+    # train the model
+    lstmcl = LSTMDiscriminative(500, 0.5, 'rmsprop', nepoch=5, batch_size=384)
+    model = lstmcl.train(dynamic_train, labels_train)
+    print(lstmcl.test(model, dynamic_val, labels_val))
 
 
 
