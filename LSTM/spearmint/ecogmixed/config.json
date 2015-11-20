@@ -19,7 +19,7 @@
         "optim" : {
             "type" : "ENUM",
             "size" : 1,
-            "options"  : ["adagrad", "rmsprop", "adam"] 
+            "options"  : ["adagrad", "rmsprop", "adam", "adadelta"] 
         }
     }
 }

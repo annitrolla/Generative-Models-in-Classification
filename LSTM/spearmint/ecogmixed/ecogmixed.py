@@ -14,14 +14,13 @@ from LSTM.lstm_classifier import LSTMClassifier
 import numpy as np
                                    
 def ecoglstm(lstmsize, dropout, optim):
-    batch_size = 8
 
     print("Reading data...")
     data = np.load("/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/train_data.npy")
     labels = np.load("/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/train_labels.npy")
     train_data, train_labels, val_data, val_labels = DataHandler.split(0.7, data, labels)
     
-    lstmcl = LSTMClassifier(lstmsize[0], dropout[0], optim[0], 10)
+    lstmcl = LSTMClassifier(lstmsize[0], dropout[0], optim[0], nepoch=10, batch_size=8)
     model_pos, model_neg = lstmcl.train(train_data, train_labels)
     result = -lstmcl.test(model_pos, model_neg, val_data, val_labels)
     
