@@ -19,11 +19,12 @@ from sklearn.preprocessing import OneHotEncoder
 
 class LSTMClassifier:
     
-    def __init__(self, lstmsize, dropout, optim, nepoch):
+    def __init__(self, lstmsize, dropout, optim, nepoch, batch_size):
         self.lstmsize = lstmsize
         self.dropout = dropout
         self.optim = optim
         self.nepoch = nepoch
+        self.batch_size = batch_size
 
     @staticmethod
     def sequence_lag(data):
@@ -35,9 +36,6 @@ class LSTMClassifier:
         return X, y
 
     def build_model(self, data):
-
-        batch_size = 64
-
         # prepare training and test set as follows:
         #   sequences in the training set will miss one observation in the end [1...299]
         #             (299th observation will be used to predict the 300th)
@@ -57,7 +55,7 @@ class LSTMClassifier:
         model.compile(loss='mean_squared_error', optimizer=self.optim) # Spearmint parameter: optimizer
 
         print("Training...")
-        model.fit(X_train, y_train, batch_size=batch_size, nb_epoch=self.nepoch, show_accuracy=True)       
+        model.fit(X_train, y_train, batch_size=self.batch_size, nb_epoch=self.nepoch, show_accuracy=True)       
         
         return model
     
@@ -95,6 +93,21 @@ class LSTMClassifier:
         accuracy = np.sum(predictions == labels) / float(len(labels))
         return accuracy
 
+    def activations(self, model, data):
+        """
+        The idea is to build a model which is identical to the actual, but does not have the last layer
+        https://github.com/fchollet/keras/issues/41
+        """
+        data = np.transpose(data, (0, 2, 1))
+        
+        extractor = Sequential()
+        extractor.add(LSTM(data.shape[2], self.lstmsize, return_sequences=True,
+                           weights=model.layers[0].get_weights()))
+        #extractor.add(Dropout(self.dropout))
+        
+        extractor.compile(loss='categorical_crossentropy', optimizer=self.optim, class_mode='categorical')
+        activations = extractor.predict(data, batch_size=self.batch_size)
+        return activations
 
 class LSTMDiscriminative:
     
@@ -109,15 +122,20 @@ class LSTMDiscriminative:
         print('Training LSTMDescriminative model')
         data = np.transpose(data, (0, 2, 1))
 
+        # encode labels into one-hot
+        enc = OneHotEncoder(sparse=False)
+        labels = enc.fit_transform(np.matrix(labels).T)
+
         print('    Building the model...')
         model = Sequential()
         model.add(LSTM(data.shape[2], self.lstmsize, return_sequences=False))
         model.add(Dropout(self.dropout))
-        model.add(Dense(self.lstmsize, 1))
-        model.add(Activation('sigmoid'))
+        model.add(Dense(self.lstmsize, 100, activation='relu'))
+        model.add(Dense(100, 2, activation='softmax'))
 
         print('    Compiling the model...')
-        model.compile(loss='binary_crossentropy', optimizer=self.optim)
+        #sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
+        model.compile(loss='categorical_crossentropy', optimizer=self.optim, class_mode='categorical')
 
         print("    Training the model...")
         model.fit(data, labels, batch_size=self.batch_size, nb_epoch=self.nepoch, show_accuracy=True)
@@ -126,19 +144,44 @@ class LSTMDiscriminative:
 
     def test(self, model, data, labels):
         data = np.transpose(data, (0, 2, 1))
-        loss, accuracy = model.evaluate(data, labels, batch_size=self.batch_size, validation_split=0.3, show_accuracy=True)
+        enc = OneHotEncoder(sparse=False)
+        labels = enc.fit_transform(np.matrix(labels).T)
+        loss, accuracy = model.evaluate(data, labels, batch_size=self.batch_size, show_accuracy=True)
         return accuracy
+
+    def pos_neg_ratios(self, model, data):
+        data = np.transpose(data, (0, 2, 1))
+        predicted = model.predict(data)
+        ratios = np.log(predicted[:, 1] / predicted[:, 0])
+        return ratios
+
+    def activations(self, model, data):
+        """
+        The idea is to build a model which is identical to the actual, but does not have the last layer
+        https://github.com/fchollet/keras/issues/41
+        """
+        data = np.transpose(data, (0, 2, 1))
+
+        extractor = Sequential()
+        extractor.add(LSTM(data.shape[2], self.lstmsize, return_sequences=False,
+                           weights=model.layers[0].get_weights()))
+        #extractor.add(Dropout(self.dropout))
+        extractor.add(Dense(self.lstmsize, 100, activation='relu',
+                            weights=model.layers[2].get_weights()))
+        extractor.compile(loss='categorical_crossentropy', optimizer=self.optim, class_mode='categorical')
+        activations = extractor.predict(data, batch_size=self.batch_size)
+        return activations
 
 
 if __name__ == '__main__':
 
     # load the data
-    static_train = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/fourier/train_data.npy')
-    dynamic_train = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/train_data.npy')
-    static_val = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/fourier/test_data.npy')
-    dynamic_val = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/test_data.npy')
-    labels_train = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/train_labels.npy')
-    labels_val = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/test_labels.npy')
+    static_train = np.load('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/train_static.npy')
+    dynamic_train = np.load('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/train_dynamic.npy')
+    static_val = np.load('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/test_static.npy')
+    dynamic_val = np.load('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/test_dynamic.npy')
+    labels_train = np.load('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/train_labels.npy')
+    labels_val = np.load('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/test_labels.npy')
 
     # train the model
     lstmcl = LSTMDiscriminative(500, 0.5, 'rmsprop', nepoch=5, batch_size=384)
