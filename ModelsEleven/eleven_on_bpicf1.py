@@ -21,7 +21,7 @@ lstmsize = 2000
 lstmdropout = 0.5
 lstmoptim = 'adagrad'
 lstmnepochs = 20
-
+lstmbatchsize = 64
 
 #
 # Load the dataset
@@ -83,7 +83,7 @@ for fid, predict_idx in enumerate(predict_idx_list):
 
     # extract predictions using LSTM on dynamic
     print "    Extracting predictions on dynamic data with LSTM..."
-    lstmcl = LSTMClassifier(lstmsize, lstmdropout, lstmoptim, lstmnepochs)
+    lstmcl = LSTMClassifier(lstmsize, lstmdropout, lstmoptim, lstmnepochs, lstmbatchsize)
     model_pos, model_neg = lstmcl.train(dynamic_all[train_idx], labels_all[train_idx])
     mse_pos, mse_neg = lstmcl.predict_mse(model_pos, model_neg, dynamic_all[predict_idx]) 
     predictions_all_lstm[predict_idx] = np.vstack((mse_pos, mse_neg)).T
@@ -162,7 +162,7 @@ model_pos, model_neg = hmmcl.train(nhmmstates, nhmmiter, hmmcovtype, dynamic_all
 print "===> (7) HMM on dynamic features: %.4f" % hmmcl.test(model_pos, model_neg, dynamic_all[test_idx], labels_all[test_idx])
 
 # LSTM on dynamic features (8)
-lstmcl = LSTMClassifier(lstmsize, lstmdropout, lstmoptim, lstmnepochs)
+lstmcl = LSTMClassifier(lstmsize, lstmdropout, lstmoptim, lstmnepochs, lstmbatchsize)
 model_pos, model_neg = lstmcl.train(dynamic_all[train_idx], labels_all[train_idx])
 print "===> (8) LSTM on dynamic features: %.4f" % lstmcl.test(model_pos, model_neg, dynamic_all[test_idx], labels_all[test_idx])
 
@@ -172,7 +172,7 @@ model_pos, model_neg = hmmcl.train(nhmmstates, nhmmiter, hmmcovtype, dynamic_and
 print "===> (9) HMM on dynamic and static features: %.4f" % hmmcl.test(model_pos, model_neg, dynamic_and_static_as_dynamic[test_idx], labels_all[test_idx])
 
 # LSTM on dynamic and static (turned into fake sequences) (10)
-lstmcl = LSTMClassifier(lstmsize, lstmdropout, lstmoptim, lstmnepochs)
+lstmcl = LSTMClassifier(lstmsize, lstmdropout, lstmoptim, lstmnepochs, lstmbatchsize)
 model_pos, model_neg = lstmcl.train(dynamic_and_static_as_dynamic[train_idx], labels_all[train_idx])
 print "===> (10) LSTM on dynamic features: %.4f" % lstmcl.test(model_pos, model_neg, dynamic_and_static_as_dynamic[test_idx], labels_all[test_idx])
 
