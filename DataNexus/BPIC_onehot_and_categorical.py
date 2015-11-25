@@ -59,6 +59,45 @@ test_dynamic_numeric = test_dynamic[['sequence_nr', 'Number of executions']]
 train_dynamic_nonnumeric = train_dynamic[['sequence_nr', 'activity_name', 'Activity code', 'group', 'Producer code', 'Section', 'Specialism code']]
 test_dynamic_nonnumeric = test_dynamic[['sequence_nr', 'activity_name', 'Activity code', 'group', 'Producer code', 'Section', 'Specialism code']]
 
+# fill NAs
+train_static_nonnumeric = train_static_nonnumeric.fillna(0)
+train_dynamic_nonnumeric = train_dynamic_nonnumeric.fillna(0)
+test_static_nonnumeric = test_static_nonnumeric.fillna(0)
+test_dynamic_nonnumeric = test_dynamic_nonnumeric.fillna(0)
+train_static_numeric = train_static_numeric.fillna(0)
+train_dynamic_numeric = train_dynamic_numeric.fillna(0)
+test_static_numeric = test_static_numeric.fillna(0)
+test_dynamic_numeric = test_dynamic_numeric.fillna(0)
+
+# select session with sequences of length at least [seqlen]
+print 'Dropping short sequencies...'
+train_session_length = train_group_by_sequence_nr['sequence_nr'].count()
+test_session_length = test_group_by_sequence_nr['sequence_nr'].count()
+train_take_sessions = train_session_length[train_session_length >= seqlen].keys()
+test_take_sessions = test_session_length[test_session_length >= seqlen].keys()
+
+train_static_numeric = train_static_numeric[train_static_numeric['sequence_nr'].isin(train_take_sessions)]
+train_static_nonnumeric = train_static_nonnumeric[train_static_nonnumeric['sequence_nr'].isin(train_take_sessions)]
+train_dynamic_nonnumeric = train_dynamic_nonnumeric[train_dynamic_nonnumeric['sequence_nr'].isin(train_take_sessions)]
+train_dynamic_numeric = train_dynamic_numeric[train_dynamic_numeric['sequence_nr'].isin(train_take_sessions)]
+
+train_labels = pd.DataFrame(train_labels)
+train_labels.index.name = 'sequence_nr'
+train_labels.reset_index(inplace=True)
+train_labels.columns = ['sequence_nr', 'label']
+train_labels = train_labels[train_labels['sequence_nr'].isin(train_take_sessions)]
+
+test_static_numeric = test_static_numeric[test_static_numeric['sequence_nr'].isin(test_take_sessions)]
+test_static_nonnumeric = test_static_nonnumeric[test_static_nonnumeric['sequence_nr'].isin(test_take_sessions)]
+test_dynamic_numeric = test_dynamic_numeric[test_dynamic_numeric['sequence_nr'].isin(test_take_sessions)]
+test_dynamic_nonnumeric = test_dynamic_nonnumeric[test_dynamic_nonnumeric['sequence_nr'].isin(test_take_sessions)]
+
+test_labels = pd.DataFrame(test_labels)
+test_labels.index.name = 'sequence_nr'
+test_labels.reset_index(inplace=True)
+test_labels.columns = ['sequence_nr', 'label']
+test_labels = test_labels[test_labels['sequence_nr'].isin(test_take_sessions)]
+
 # one-hot encoding for static non-numeric and dynamic non-numeric
 # encode non-numeric data
 print 'Encoding non-numerics...'
@@ -69,16 +108,25 @@ def encode_one_hot(train, test, column):
 
     # encode them with integers
     for i, option in enumerate(options):
-        train.loc[:, column] = train.loc[:, column].replace(option, i + 1)
-        test.loc[:, column] = test.loc[:, column].replace(option, i + 1)
+        #train.loc[:, column] = train.loc[:, column].replace(option, i + 1)
+        #test.loc[:, column] = test.loc[:, column].replace(option, i + 1)
+        train.loc[train[column] == option, column] = i + 1
+        test.loc[test[column] == option, column] = i + 1
 
     # recode into one-hot vectors
     options = list(set(list(train[column].unique()) + list(test[column].unique())))
     enc = OneHotEncoder(sparse=False)
     enc.fit(np.matrix(options).T)
     original_names = dict((i, a) for i, a in enumerate(train.columns.values))
-    train = pd.concat([train, pd.DataFrame(enc.transform(np.matrix(train[column]).T))], axis=1, ignore_index=True)
-    test = pd.concat([test, pd.DataFrame(enc.transform(np.matrix(test[column]).T))], axis=1, ignore_index=True)
+    
+    oh = pd.DataFrame(enc.transform(np.matrix(train[column]).T))
+    oh = oh.set_index(train.index.values)
+    train = pd.concat([train, oh], axis=1, ignore_index=True)
+    
+    oh = pd.DataFrame(enc.transform(np.matrix(test[column]).T))
+    oh = oh.set_index(test.index.values)
+    test = pd.concat([test, oh], axis=1, ignore_index=True)
+    
     train = train.rename(columns=original_names)
     test = test.rename(columns=original_names)
 
@@ -111,47 +159,6 @@ train_dynamic_nonnumeric, test_dynamic_nonnumeric = encode_as_int(train_dynamic_
 train_dynamic_nonnumeric, test_dynamic_nonnumeric = encode_as_int(train_dynamic_nonnumeric, test_dynamic_nonnumeric, 'Section')
 train_dynamic_nonnumeric, test_dynamic_nonnumeric = encode_as_int(train_dynamic_nonnumeric, test_dynamic_nonnumeric, 'Specialism code')
 train_static_nonnumeric, test_static_nonnumeric = encode_one_hot(train_static_nonnumeric, test_static_nonnumeric, 'Treatment code')
-
-# fill NAs
-train_static_nonnumeric = train_static_nonnumeric.fillna(0)
-train_dynamic_nonnumeric = train_dynamic_nonnumeric.fillna(0)
-test_static_nonnumeric = test_static_nonnumeric.fillna(0)
-test_dynamic_nonnumeric = test_dynamic_nonnumeric.fillna(0)
-train_static_numeric = train_static_numeric.fillna(0)
-train_dynamic_numeric = train_dynamic_numeric.fillna(0)
-test_static_numeric = test_static_numeric.fillna(0)
-test_dynamic_numeric = test_dynamic_numeric.fillna(0)
-
-# select session with sequences of length at least [seqlen]
-print 'Dropping short sequencies...'
-train_session_length = train_group_by_sequence_nr['sequence_nr'].count()
-test_session_length = test_group_by_sequence_nr['sequence_nr'].count()
-train_take_sessions = train_session_length[train_session_length >= seqlen].keys()
-test_take_sessions = test_session_length[test_session_length >= seqlen].keys()
-
-train_static_numeric = train_static_numeric[train_static_numeric['sequence_nr'].isin(train_take_sessions)]
-train_static_nonnumeric = train_static_nonnumeric[train_static_nonnumeric['sequence_nr'].isin(train_take_sessions)]
-
-train_dynamic_nonnumeric = train_dynamic_nonnumeric[train_dynamic_nonnumeric['sequence_nr'].isin(train_take_sessions)]
-train_dynamic_numeric = train_dynamic_numeric[train_dynamic_numeric['sequence_nr'].isin(train_take_sessions)]
-
-train_labels = pd.DataFrame(train_labels)
-train_labels.index.name = 'sequence_nr'
-train_labels.reset_index(inplace=True)
-train_labels.columns = ['sequence_nr', 'label']
-train_labels = train_labels[train_labels['sequence_nr'].isin(train_take_sessions)]
-
-test_static_numeric = test_static_numeric[test_static_numeric['sequence_nr'].isin(test_take_sessions)]
-test_static_nonnumeric = test_static_nonnumeric[test_static_nonnumeric['sequence_nr'].isin(test_take_sessions)]
-test_dynamic_numeric = test_dynamic_numeric[test_dynamic_numeric['sequence_nr'].isin(test_take_sessions)]
-test_dynamic_nonnumeric = test_dynamic_nonnumeric[test_dynamic_nonnumeric['sequence_nr'].isin(test_take_sessions)]
-
-
-test_labels = pd.DataFrame(test_labels)
-test_labels.index.name = 'sequence_nr'
-test_labels.reset_index(inplace=True)
-test_labels.columns = ['sequence_nr', 'label']
-test_labels = test_labels[test_labels['sequence_nr'].isin(test_take_sessions)]
 
 # convert dynamic to numpy
 print 'Converting train dynamic features to 3D structure...'
@@ -189,17 +196,31 @@ for i, sid in enumerate(test_take_sessions):
 
 
 # drop sequence_nr
+"""
 train_static_numeric = train_static_numeric.drop('sequence_nr', axis=1)
 train_static_nonnumeric = train_static_nonnumeric.drop('sequence_nr', axis=1)
 train_dynamic_numeric = train_dynamic_numeric.drop('sequence_nr', axis=1)
 train_dynamic_nonnumeric = train_dynamic_nonnumeric.drop('sequence_nr', axis=1)
 train_labels = train_labels.drop('sequence_nr', axis=1)
+"""
+train_static_numeric.drop('sequence_nr', axis=1, inplace=True)
+train_static_nonnumeric.drop('sequence_nr', axis=1, inplace=True)
+train_dynamic_numeric.drop('sequence_nr', axis=1, inplace=True)
+train_dynamic_nonnumeric.drop('sequence_nr', axis=1, inplace=True)
+train_labels.drop('sequence_nr', axis=1, inplace=True)
 
+"""
 test_static_numeric = test_static_numeric.drop('sequence_nr', axis=1)
 test_static_nonnumeric = test_static_nonnumeric.drop('sequence_nr', axis=1)
 test_dynamic_numeric = test_dynamic_numeric.drop('sequence_nr', axis=1)
 test_dynamic_nonnumeric = test_dynamic_nonnumeric.drop('sequence_nr', axis=1)
 test_labels = test_labels.drop('sequence_nr', axis=1)
+"""
+test_static_numeric.drop('sequence_nr', axis=1, inplace=True)
+test_static_nonnumeric.drop('sequence_nr', axis=1, inplace=True)
+test_dynamic_numeric.drop('sequence_nr', axis=1, inplace=True)
+test_dynamic_nonnumeric.drop('sequence_nr', axis=1, inplace=True)
+test_labels.drop('sequence_nr', axis=1, inplace=True)
 
 # put into numpy matrices
 train_static_numeric = np.array(train_static_numeric)
