@@ -216,9 +216,9 @@ class GMMHMMClassifier(HMMClassifier):
 
 class MultinomialHMMClassifier(HMMClassifier):
 
-    def train(self, nstates, niter, data, labels):
-        train_pos = list(fdata[labels==1, :, :].squeeze())
-        train_neg = list(fdata[labels==0, :, :].squeeze())
+    def train(self, nstates, niter, fdata_pos, fdata_neg, labels):
+        train_pos = list(fdata_pos.squeeze())
+        train_neg = list(fdata_neg.squeeze())
         print "Start training MultinomialHMMClassifier models..."
         model_pos = hmm.MultinomialHMM(nstates, n_iter=niter)
         model_neg = hmm.MultinomialHMM(nstates, n_iter=niter)
@@ -226,27 +226,77 @@ class MultinomialHMMClassifier(HMMClassifier):
         model_neg.fit(train_neg)
         return model_pos, model_neg
 
-    def train_per_feature(self, nstates, niter, data, labels):
+    def train_per_feature(self, nstates, niter, data_pos, data_neg, labels):
         
         # variables for convenience
-        nsamples = data.shape[0]
-        nseqfeatures = data.shape[1]
-        seqlen = data.shape[2]
+        nsamples_pos = data_pos.shape[0]
+        nsamples_neg = data_neg.shape[0]
+        nseqfeatures = data_pos.shape[1]
+        seqlen = data_pos.shape[2]
 
         # train a pair of models for each sequential feature
         models_pos = [None] * nseqfeatures
         models_neg = [None] * nseqfeatures
         for fid in range(nseqfeatures):
             print 'Training pair of models for feature %d/%d...' % (fid + 1, nseqfeatures)
-            fdata = data[:, fid, :].reshape((nsamples, 1, seqlen))
-            model_pos, model_neg = self.train(nstates, niter, fdata, labels)
+            fdata_pos = data_pos[:, fid, :].reshape((nsamples_pos, 1, seqlen))
+            fdata_neg = data_neg[:, fid, :].reshape((nsamples_neg, 1, seqlen))
+            model_pos, model_neg = self.train(nstates, niter, fdata_pos, fdata_neg, labels)
             models_pos[fid] = model_pos
             models_neg[fid] = model_neg
 
         return models_pos, models_neg
  
-    def test_per_feature(self, models_pos, models_neg, data, labels):
-        return self.accuracy_per_feature(data, labels, models_pos, models_neg)
+    def test_per_feature(self, models_pos, models_neg, data_pos, data_neg, labels, pos_to_neg, neg_to_pos):
+        return self.accuracy_per_feature(data_pos, data_neg, labels, models_pos, models_neg, pos_to_neg, neg_to_pos)
+
+    def accuracy_per_feature(self, data_pos, data_neg, labels, models_pos, models_neg, pos_to_neg, neg_to_pos):
+        
+        # variables for convenience
+        nsamples_pos = data_pos.shape[0]
+        nsamples_neg = data_neg.shape[0]
+        nseqfeatures = data_pos.shape[1]
+        seqlen = data_neg.shape[2]
+
+        data_pos_as_neg = np.zeros(data_pos.shape)
+        data_neg_as_pos = np.zeros(data_neg.shape)
+        for fid in range(nseqfeatures):
+            for p, n in enumerate(pos_to_neg[fid]):
+                data_pos_as_neg[:, fid, :][data_pos[:, fid, :] == p] = n
+            for n, p in enumerate(neg_to_pos[fid]):
+                data_neg_as_pos[:, fid, :][data_neg[:, fid, :] == n] = p
+
+        # compute predictions for each model pair
+        votes_pos = np.zeros((nseqfeatures, nsamples_pos))
+        votes_neg = np.zeros((nseqfeatures, nsamples_neg))
+
+        for fid in range(nseqfeatures):
+            fdata_pos = data_pos[:, fid, :].reshape((nsamples_pos, 1, seqlen))
+            fdata_pos = self.tensor_to_list(fdata_pos)
+            accuracy, predictions = self.accuracy(fdata, labels, models_pos[fid], models_neg[fid], True)
+            print '  Accuracy with feature %d is %.4f' % (fid, accuracy)
+            votes[fid, :] = predictions
+
+        # for each sample take the majority vote
+        preds = mode(votes, axis=0)[0][0]
+
+        # compute accuracy of the majority voted predictions
+        accuracy = np.sum(preds == labels) / float(len(labels))
+
+        return accuracy
+
+    def ispositive(self, instance_pos, instance_neg, model_pos, model_neg):
+        return model_pos.score(instance_pos) >= model_neg.score(instance_neg)
+
+    def accuracy(self, data_pos, data_neg, labels, model_pos, model_neg, show_prediction=False):
+        pred = []
+        for i in range(len(data_pos)):
+            pred.append(int(self.ispositive(data_pos[i], data_neg[i], model_pos, model_neg)))
+        acc = float(sum(pred == labels))/float(len(pred))
+        if show_prediction == True:
+            return acc, pred
+        else:
+            return acc
 
 if __name__ == '__main__':
     

@@ -7,6 +7,7 @@ import argparse
 import time
 import datetime
 from sklearn.preprocessing import OneHotEncoder
+import cPickle
 
 parser = argparse.ArgumentParser(description='Convert BPIC2011 dataset for our pipeline')
 parser.add_argument('-l', '--seqlen', dest='seqlen', type=int, required=True, help='Length of the sequence (shorter dropped, longer truncated)')
@@ -108,8 +109,8 @@ def encode_one_hot(train, test, column):
     for i, option in enumerate(options):
         #train.loc[:, column] = train.loc[:, column].replace(option, i + 1)
         #test.loc[:, column] = test.loc[:, column].replace(option, i + 1)
-        train.loc[train[column] == option, column] = i + 1
-        test.loc[test[column] == option, column] = i + 1
+        train.loc[train[column] == option, column] = i
+        test.loc[test[column] == option, column] = i
 
     # recode into one-hot vectors
     options = list(set(list(train[column].unique()) + list(test[column].unique())))
@@ -144,14 +145,17 @@ def encode_as_int(train, test, column):
     unknown_id = len(options)
 
     # encode them with integers
+    mapping = {}
     for i, option in enumerate(options):
-        train.loc[:, column] = train.loc[:, column].replace(option, i + 1)
-        test.loc[:, column] = test.loc[:, column].replace(option, i + 1)
-    
+        train.loc[:, column] = train.loc[:, column].replace(option, i)
+        test.loc[:, column] = test.loc[:, column].replace(option, i)
+        mapping[option] = i
+
     for option in test_only_options:
         test.loc[:, column] = test.loc[:, column].replace(option, unknown_id)
+        mapping[option] = unknown_id
 
-    return train, test
+    return train, test, mapping
 
 # cutting sequences up to pre-defined length
 print "Cutting sequenes up to %d..." % seqlen
@@ -201,11 +205,41 @@ test_dynamic_nonnumeric_pos = test_dynamic_nonnumeric[test_dynamic_nonnumeric['s
 test_dynamic_nonnumeric_neg = test_dynamic_nonnumeric[test_dynamic_nonnumeric['sequence_nr'].isin(test_neg_sessions)]
 
 print 'Encoding non-numerics...'
+mappings = {}
+mappings['pos'] = {}
+mappings['neg'] = {}
+
 # dynamic for multinomial
-for column in ['activity_name', 'Activity code', 'group', 'Producer code', 'Section', 'Specialism code']:
+for cid, column in enumerate(['activity_name', 'Activity code', 'group', 'Producer code', 'Section', 'Specialism code']):
     print '    encoding %s' % column
-    train_dynamic_nonnumeric_pos, test_dynamic_nonnumeric_pos = encode_as_int(train_dynamic_nonnumeric_pos, test_dynamic_nonnumeric_pos, column) 
-    train_dynamic_nonnumeric_neg, test_dynamic_nonnumeric_neg = encode_as_int(train_dynamic_nonnumeric_neg, test_dynamic_nonnumeric_neg, column)
+    train_dynamic_nonnumeric_pos, test_dynamic_nonnumeric_pos, mapping = encode_as_int(train_dynamic_nonnumeric_pos, test_dynamic_nonnumeric_pos, column) 
+    mappings['pos'][cid] = mapping
+    train_dynamic_nonnumeric_neg, test_dynamic_nonnumeric_neg, mapping = encode_as_int(train_dynamic_nonnumeric_neg, test_dynamic_nonnumeric_neg, column)
+    mappings['neg'][cid] = mapping
+
+# convert the mapping into pos-to-neg and neg-to-pos mappings
+pos_to_neg = {}
+for cid, column in enumerate(['activity_name', 'Activity code', 'group', 'Producer code', 'Section', 'Specialism code']):
+
+    # initialize resulting code with negative unknown
+    pos_to_neg[cid] = np.ones(len(mappings['pos'][cid]), dtype='int') * max(mappings['neg'][cid].values())
+
+    for name, p in mappings['pos'][cid].iteritems():
+        n = mappings['neg'][cid].get(name, None)
+        if n is not None:
+            pos_to_neg[cid][p] = n
+
+neg_to_pos = {}
+for cid, column in enumerate(['activity_name', 'Activity code', 'group', 'Producer code', 'Section', 'Specialism code']):
+
+    # initialize resulting code with negative unknown
+    neg_to_pos[cid] = np.ones(len(mappings['neg'][cid]), dtype='int') * max(mappings['pos'][cid].values())
+
+    for name, n in mappings['neg'][cid].iteritems():
+        p = mappings['pos'][cid].get(name, None)
+        if p is not None:
+            neg_to_pos[cid][n] = p
+
 
 # static
 for column in ['Diagnosis', 'Diagnosis code', 'Diagnosis Treatment Combination ID', 'Treatment code']:
@@ -301,3 +335,14 @@ np.save('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/test_dynami
 np.save('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/test_dynamic_nonnumeric_neg.npy' % dataset, test_dynamic_nonnumeric_neg)
 np.save('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/train_labels.npy' % dataset, train_labels)
 np.save('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/test_labels.npy' % dataset, test_labels)
+
+print 'Storing mappings between test and train...'
+with open('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/pos_to_neg.pkl' % dataset, 'w') as f:
+    cPickle.dump(pos_to_neg, f)
+with open('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/neg_to_pos.pkl' % dataset, 'w') as f:
+    cPickle.dump(neg_to_pos, f)
+
+
+
+
+
