@@ -100,7 +100,6 @@ test_labels = test_labels[test_labels['sequence_nr'].isin(test_take_sessions)]
 
 # one-hot encoding for static non-numeric and dynamic non-numeric
 # encode non-numeric data
-print 'Encoding non-numerics...'
 def encode_one_hot(train, test, column):
 
     # compose full list of options
@@ -139,16 +138,58 @@ def encode_one_hot(train, test, column):
 def encode_as_int(train, test, column):
 
     # compose full list of options
-    options = list(set(list(train[column].unique()) + list(test[column].unique())))
+    #options = list(set(list(train[column].unique()) + list(test[column].unique())))
+    options = train[column].unique()
+    unknown_id = len(options) - 1
 
     # encode them with integers
     for i, option in enumerate(options):
         train.loc[:, column] = train.loc[:, column].replace(option, i + 1)
         test.loc[:, column] = test.loc[:, column].replace(option, i + 1)
 
+    test_only_options = list(set(test[column].unique()) - set(options))
+    for option in test_only_options:
+        test.loc[:, column] = test.loc[:, column].replace(option, unknown_id)
+
     return train, test
 
+# cutting sequences up to pre-defined length
+print "Cutting sequenes up to %d..." % seqlen
+n_train = len(train_labels) 
+train_dynamic_numeric_short = pd.DataFrame(columns=train_dynamic_numeric.columns)
+train_dynamic_nonnumeric_short = pd.DataFrame(columns=train_dynamic_nonnumeric.columns)
+for i, sid in enumerate(train_take_sessions):
+    sys.stdout.write('{0}/{1}\r'.format(i, n_train))
+    sys.stdout.flush()
+    session_data_numeric = train_dynamic_numeric[train_dynamic_numeric['sequence_nr'] == sid]
+    session_data_numeric = session_data_numeric.iloc[:seqlen, :]
+    train_dynamic_numeric_short = train_dynamic_numeric_short.append(session_data_numeric)
+    
+    session_data_nonnumeric = train_dynamic_nonnumeric[train_dynamic_nonnumeric['sequence_nr'] == sid]
+    session_data_nonnumeric = session_data_nonnumeric.iloc[:seqlen, :]
+    train_dynamic_nonnumeric_short = train_dynamic_nonnumeric_short.append(session_data_nonnumeric)
 
+train_dynamic_numeric = train_dynamic_numeric_short
+train_dynamic_nonnumeric = train_dynamic_nonnumeric_short 
+
+n_test = len(test_labels) 
+test_dynamic_numeric_short = pd.DataFrame(columns=test_dynamic_numeric.columns)
+test_dynamic_nonnumeric_short = pd.DataFrame(columns=test_dynamic_nonnumeric.columns)
+for i, sid in enumerate(test_take_sessions):
+    sys.stdout.write('{0}/{1}\r'.format(i, n_test))
+    sys.stdout.flush()
+    session_data_numeric = test_dynamic_numeric[test_dynamic_numeric['sequence_nr'] == sid]
+    session_data_numeric = session_data_numeric.iloc[:seqlen, :]
+    test_dynamic_numeric_short = test_dynamic_numeric_short.append(session_data_numeric)
+    
+    session_data_nonnumeric = test_dynamic_nonnumeric[test_dynamic_nonnumeric['sequence_nr'] == sid]
+    session_data_nonnumeric = session_data_nonnumeric.iloc[:seqlen, :]
+    test_dynamic_nonnumeric_short = test_dynamic_nonnumeric_short.append(session_data_nonnumeric)
+
+test_dynamic_numeric = test_dynamic_numeric_short
+test_dynamic_nonnumeric = test_dynamic_nonnumeric_short 
+
+print 'Encoding non-numerics...'
 train_dynamic_nonnumeric, test_dynamic_nonnumeric = encode_as_int(train_dynamic_nonnumeric, test_dynamic_nonnumeric, 'activity_name')
 train_dynamic_nonnumeric, test_dynamic_nonnumeric = encode_as_int(train_dynamic_nonnumeric, test_dynamic_nonnumeric, 'Activity code')
 train_static_nonnumeric, test_static_nonnumeric = encode_one_hot(train_static_nonnumeric, test_static_nonnumeric, 'Diagnosis')
@@ -162,60 +203,32 @@ train_static_nonnumeric, test_static_nonnumeric = encode_one_hot(train_static_no
 
 # convert dynamic to numpy
 print 'Converting train dynamic features to 3D structure...'
-n_train = len(train_labels)
 train_dynamic_numeric_np = np.zeros((n_train, train_dynamic_numeric.shape[1] - 1, seqlen))
 train_dynamic_nonnumeric_np = np.zeros((n_train, train_dynamic_nonnumeric.shape[1] - 1, seqlen), dtype='int')
-
 for i, sid in enumerate(train_take_sessions):
-    sys.stdout.write('{0}/{1}\r'.format(i, n_train))
-    sys.stdout.flush()
     session_data_numeric = train_dynamic_numeric[train_dynamic_numeric['sequence_nr'] == sid]
-    session_data_numeric = session_data_numeric.iloc[:seqlen, :].drop(['sequence_nr'], axis=1)
-    train_dynamic_numeric_np[i, :, :] = np.array(session_data_numeric).T
+    train_dynamic_numeric_np[i, :, :] = np.array(session_data_numeric.drop('sequence_nr', axis=1)).T
 
     session_data_nonnumeric = train_dynamic_nonnumeric[train_dynamic_nonnumeric['sequence_nr'] == sid]
-    session_data_nonnumeric = session_data_nonnumeric.iloc[:seqlen, :].drop(['sequence_nr'], axis=1)
-    train_dynamic_nonnumeric_np[i, :, :] = np.array(session_data_nonnumeric).T
-
+    train_dynamic_nonnumeric_np[i, :, :] = np.array(session_data_nonnumeric.drop('sequence_nr', axis=1)).T
 
 print 'Converting test dynamic features to 3D structure...'
-n_test = len(test_labels)
 test_dynamic_numeric_np = np.zeros((n_test, test_dynamic_numeric.shape[1] - 1, seqlen))
 test_dynamic_nonnumeric_np = np.zeros((n_test, test_dynamic_nonnumeric.shape[1] - 1, seqlen), dtype='int')
-
 for i, sid in enumerate(test_take_sessions):
-    sys.stdout.write('{0}/{1}\r'.format(i, n_test))
-    sys.stdout.flush()
     session_data_numeric = test_dynamic_numeric[test_dynamic_numeric['sequence_nr'] == sid]
-    session_data_numeric = session_data_numeric.iloc[:seqlen, :].drop(['sequence_nr'], axis=1)
-    test_dynamic_numeric_np[i, :, :] = np.array(session_data_numeric).T
+    test_dynamic_numeric_np[i, :, :] = np.array(session_data_numeric.drop('sequence_nr', axis=1)).T
 
     session_data_nonnumeric = test_dynamic_nonnumeric[test_dynamic_nonnumeric['sequence_nr'] == sid]
-    session_data_nonnumeric = session_data_nonnumeric.iloc[:seqlen, :].drop(['sequence_nr'], axis=1)
-    test_dynamic_nonnumeric_np[i, :, :] = np.array(session_data_nonnumeric).T
-
+    test_dynamic_nonnumeric_np[i, :, :] = np.array(session_data_nonnumeric.drop('sequence_nr', axis=1)).T
 
 # drop sequence_nr
-"""
-train_static_numeric = train_static_numeric.drop('sequence_nr', axis=1)
-train_static_nonnumeric = train_static_nonnumeric.drop('sequence_nr', axis=1)
-train_dynamic_numeric = train_dynamic_numeric.drop('sequence_nr', axis=1)
-train_dynamic_nonnumeric = train_dynamic_nonnumeric.drop('sequence_nr', axis=1)
-train_labels = train_labels.drop('sequence_nr', axis=1)
-"""
 train_static_numeric.drop('sequence_nr', axis=1, inplace=True)
 train_static_nonnumeric.drop('sequence_nr', axis=1, inplace=True)
 train_dynamic_numeric.drop('sequence_nr', axis=1, inplace=True)
 train_dynamic_nonnumeric.drop('sequence_nr', axis=1, inplace=True)
 train_labels.drop('sequence_nr', axis=1, inplace=True)
 
-"""
-test_static_numeric = test_static_numeric.drop('sequence_nr', axis=1)
-test_static_nonnumeric = test_static_nonnumeric.drop('sequence_nr', axis=1)
-test_dynamic_numeric = test_dynamic_numeric.drop('sequence_nr', axis=1)
-test_dynamic_nonnumeric = test_dynamic_nonnumeric.drop('sequence_nr', axis=1)
-test_labels = test_labels.drop('sequence_nr', axis=1)
-"""
 test_static_numeric.drop('sequence_nr', axis=1, inplace=True)
 test_static_nonnumeric.drop('sequence_nr', axis=1, inplace=True)
 test_dynamic_numeric.drop('sequence_nr', axis=1, inplace=True)

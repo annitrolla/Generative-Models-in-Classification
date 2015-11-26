@@ -227,6 +227,28 @@ class MultinomialHMMClassifier(HMMClassifier):
 
         return model_pos, model_neg
 
+    def train_per_feature(self, nstates, niter, data, labels):
+        
+        # variables for convenience
+        nsamples = data.shape[0]
+        nseqfeatures = data.shape[1]
+        seqlen = data.shape[2]
+
+        # train a pair of models for each sequential feature
+        models_pos = [None] * nseqfeatures
+        models_neg = [None] * nseqfeatures
+        for fid in range(nseqfeatures):
+            print 'Training pair of models for feature %d/%d...' % (fid, nseqfeatures)
+            fdata = data[:, fid, :].reshape((nsamples, 1, seqlen))
+            model_pos, model_neg = self.train(nstates, niter, fdata, labels)
+            models_pos[fid] = model_pos
+            models_neg[fid] = model_neg
+
+        return models_pos, models_neg
+ 
+    def test_per_feature(self, models_pos, models_neg, data, labels):
+        return self.accuracy_per_feature(data, labels, models_pos, models_neg)
+
 if __name__ == '__main__':
     
     print("Reading data...")
