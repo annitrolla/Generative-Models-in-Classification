@@ -7,8 +7,14 @@
         "lstmsize" : {
             "type" : "INT",
             "size" : 1,
-            "min"  : 100,
-            "max"  : 2000
+            "min"  : 50,
+            "max"  : 1000
+        },
+        "fcsize" : {
+            "type" : "INT",
+            "size" : 1,
+            "min"  : 10,
+            "max"  : 1000    
         },
         "dropout" : {
             "type" : "FLOAT",
