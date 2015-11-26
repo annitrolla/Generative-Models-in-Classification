@@ -15,7 +15,6 @@ args = parser.parse_args()
 seqlen = int(args.seqlen)
 dataset = str(args.dataset)
 
-
 # load the data
 print 'Loading data...'
 train = pd.read_csv('/storage/hpc_anna/GMiC/Data/BPIChallenge/%s/csv/train.csv' % dataset, sep=' ', quotechar='"')
@@ -138,16 +137,17 @@ def encode_one_hot(train, test, column):
 def encode_as_int(train, test, column):
 
     # compose full list of options
-    #options = list(set(list(train[column].unique()) + list(test[column].unique())))
     options = train[column].unique()
-    unknown_id = len(options) - 1
+    test_only_options = list(set(test[column].unique()) - set(options))
+    
+    # use last option to designate "unknown"
+    unknown_id = len(options)
 
     # encode them with integers
     for i, option in enumerate(options):
         train.loc[:, column] = train.loc[:, column].replace(option, i + 1)
         test.loc[:, column] = test.loc[:, column].replace(option, i + 1)
-
-    test_only_options = list(set(test[column].unique()) - set(options))
+    
     for option in test_only_options:
         test.loc[:, column] = test.loc[:, column].replace(option, unknown_id)
 
@@ -189,73 +189,115 @@ for i, sid in enumerate(test_take_sessions):
 test_dynamic_numeric = test_dynamic_numeric_short
 test_dynamic_nonnumeric = test_dynamic_nonnumeric_short 
 
-print 'Encoding non-numerics...'
-train_dynamic_nonnumeric, test_dynamic_nonnumeric = encode_as_int(train_dynamic_nonnumeric, test_dynamic_nonnumeric, 'activity_name')
-train_dynamic_nonnumeric, test_dynamic_nonnumeric = encode_as_int(train_dynamic_nonnumeric, test_dynamic_nonnumeric, 'Activity code')
-train_static_nonnumeric, test_static_nonnumeric = encode_one_hot(train_static_nonnumeric, test_static_nonnumeric, 'Diagnosis')
-train_static_nonnumeric, test_static_nonnumeric = encode_one_hot(train_static_nonnumeric, test_static_nonnumeric, 'Diagnosis code')
-train_static_nonnumeric, test_static_nonnumeric = encode_one_hot(train_static_nonnumeric, test_static_nonnumeric, 'Diagnosis Treatment Combination ID')
-train_dynamic_nonnumeric, test_dynamic_nonnumeric = encode_as_int(train_dynamic_nonnumeric, test_dynamic_nonnumeric, 'group')
-train_dynamic_nonnumeric, test_dynamic_nonnumeric = encode_as_int(train_dynamic_nonnumeric, test_dynamic_nonnumeric, 'Producer code')
-train_dynamic_nonnumeric, test_dynamic_nonnumeric = encode_as_int(train_dynamic_nonnumeric, test_dynamic_nonnumeric, 'Section')
-train_dynamic_nonnumeric, test_dynamic_nonnumeric = encode_as_int(train_dynamic_nonnumeric, test_dynamic_nonnumeric, 'Specialism code')
-train_static_nonnumeric, test_static_nonnumeric = encode_one_hot(train_static_nonnumeric, test_static_nonnumeric, 'Treatment code')
+# pos/neg
+train_pos_sessions = list(train_labels[train_labels['label']==1]['sequence_nr'])
+train_neg_sessions = list(train_labels[train_labels['label']==0]['sequence_nr'])
+test_pos_sessions = list(test_labels[test_labels['label']==1]['sequence_nr'])
+test_neg_sessions = list(test_labels[test_labels['label']==0]['sequence_nr'])
 
-# convert dynamic to numpy
-print 'Converting train dynamic features to 3D structure...'
+train_dynamic_nonnumeric_pos = train_dynamic_nonnumeric[train_dynamic_nonnumeric['sequence_nr'].isin(train_pos_sessions)]
+train_dynamic_nonnumeric_neg = train_dynamic_nonnumeric[train_dynamic_nonnumeric['sequence_nr'].isin(train_neg_sessions)]
+test_dynamic_nonnumeric_pos = test_dynamic_nonnumeric[test_dynamic_nonnumeric['sequence_nr'].isin(test_pos_sessions)]
+test_dynamic_nonnumeric_neg = test_dynamic_nonnumeric[test_dynamic_nonnumeric['sequence_nr'].isin(test_neg_sessions)]
+
+print 'Encoding non-numerics...'
+# dynamic for multinomial
+for column in ['activity_name', 'Activity code', 'group', 'Producer code', 'Section', 'Specialism code']:
+    print '    encoding %s' % column
+    train_dynamic_nonnumeric_pos, test_dynamic_nonnumeric_pos = encode_as_int(train_dynamic_nonnumeric_pos, test_dynamic_nonnumeric_pos, column) 
+    train_dynamic_nonnumeric_neg, test_dynamic_nonnumeric_neg = encode_as_int(train_dynamic_nonnumeric_neg, test_dynamic_nonnumeric_neg, column)
+
+# static
+for column in ['Diagnosis', 'Diagnosis code', 'Diagnosis Treatment Combination ID', 'Treatment code']:
+    print '    encoding %s' % column
+    train_static_nonnumeric, test_static_nonnumeric = encode_one_hot(train_static_nonnumeric, test_static_nonnumeric, column)
+
+
+#
+# Convert Pandas data frames to numpy matrices
+#
+print 'Converting dynamic features to 3D structure...'
+
+# dynamic numeric train
 train_dynamic_numeric_np = np.zeros((n_train, train_dynamic_numeric.shape[1] - 1, seqlen))
-train_dynamic_nonnumeric_np = np.zeros((n_train, train_dynamic_nonnumeric.shape[1] - 1, seqlen), dtype='int')
 for i, sid in enumerate(train_take_sessions):
     session_data_numeric = train_dynamic_numeric[train_dynamic_numeric['sequence_nr'] == sid]
     train_dynamic_numeric_np[i, :, :] = np.array(session_data_numeric.drop('sequence_nr', axis=1)).T
 
-    session_data_nonnumeric = train_dynamic_nonnumeric[train_dynamic_nonnumeric['sequence_nr'] == sid]
-    train_dynamic_nonnumeric_np[i, :, :] = np.array(session_data_nonnumeric.drop('sequence_nr', axis=1)).T
+# dynamic nonnumeric train
+n_train_pos = len(train_pos_sessions)
+train_dynamic_nonnumeric_pos_np = np.zeros((n_train_pos, train_dynamic_nonnumeric_pos.shape[1] - 1, seqlen), dtype='int')
+for i, sid in enumerate(train_pos_sessions):
+    session_data = train_dynamic_nonnumeric_pos[train_dynamic_nonnumeric_pos['sequence_nr'] == sid]
+    train_dynamic_nonnumeric_pos_np[i, :, :] = np.array(session_data.drop('sequence_nr', axis=1)).T
 
-print 'Converting test dynamic features to 3D structure...'
+n_train_neg = len(train_neg_sessions)
+train_dynamic_nonnumeric_neg_np = np.zeros((n_train_neg, train_dynamic_nonnumeric_neg.shape[1] - 1, seqlen), dtype='int')
+for i, sid in enumerate(train_neg_sessions):
+    session_data = train_dynamic_nonnumeric_neg[train_dynamic_nonnumeric_neg['sequence_nr'] == sid]
+    train_dynamic_nonnumeric_neg_np[i, :, :] = np.array(session_data.drop('sequence_nr', axis=1)).T
+
+# dynamic numeric test
 test_dynamic_numeric_np = np.zeros((n_test, test_dynamic_numeric.shape[1] - 1, seqlen))
-test_dynamic_nonnumeric_np = np.zeros((n_test, test_dynamic_nonnumeric.shape[1] - 1, seqlen), dtype='int')
 for i, sid in enumerate(test_take_sessions):
     session_data_numeric = test_dynamic_numeric[test_dynamic_numeric['sequence_nr'] == sid]
     test_dynamic_numeric_np[i, :, :] = np.array(session_data_numeric.drop('sequence_nr', axis=1)).T
 
-    session_data_nonnumeric = test_dynamic_nonnumeric[test_dynamic_nonnumeric['sequence_nr'] == sid]
-    test_dynamic_nonnumeric_np[i, :, :] = np.array(session_data_nonnumeric.drop('sequence_nr', axis=1)).T
+# dynamic nonumeric test
+n_test_pos = len(test_pos_sessions)
+test_dynamic_nonnumeric_pos_np = np.zeros((n_test_pos, test_dynamic_nonnumeric_pos.shape[1] - 1, seqlen), dtype='int')
+for i, sid in enumerate(test_pos_sessions):
+    session_data = test_dynamic_nonnumeric_pos[test_dynamic_nonnumeric_pos['sequence_nr'] == sid]
+    test_dynamic_nonnumeric_pos_np[i, :, :] = np.array(session_data.drop('sequence_nr', axis=1)).T
+
+n_test_neg = len(test_neg_sessions)
+test_dynamic_nonnumeric_neg_np = np.zeros((n_test_neg, test_dynamic_nonnumeric_neg.shape[1] - 1, seqlen), dtype='int')
+for i, sid in enumerate(test_neg_sessions):
+    session_data = test_dynamic_nonnumeric_neg[test_dynamic_nonnumeric_neg['sequence_nr'] == sid]
+    test_dynamic_nonnumeric_neg_np[i, :, :] = np.array(session_data.drop('sequence_nr', axis=1)).T
 
 # drop sequence_nr
 train_static_numeric.drop('sequence_nr', axis=1, inplace=True)
 train_static_nonnumeric.drop('sequence_nr', axis=1, inplace=True)
 train_dynamic_numeric.drop('sequence_nr', axis=1, inplace=True)
 train_dynamic_nonnumeric.drop('sequence_nr', axis=1, inplace=True)
+train_dynamic_nonnumeric_pos.drop('sequence_nr', axis=1, inplace=True)
+train_dynamic_nonnumeric_neg.drop('sequence_nr', axis=1, inplace=True)
 train_labels.drop('sequence_nr', axis=1, inplace=True)
 
 test_static_numeric.drop('sequence_nr', axis=1, inplace=True)
 test_static_nonnumeric.drop('sequence_nr', axis=1, inplace=True)
 test_dynamic_numeric.drop('sequence_nr', axis=1, inplace=True)
 test_dynamic_nonnumeric.drop('sequence_nr', axis=1, inplace=True)
+test_dynamic_nonnumeric_pos.drop('sequence_nr', axis=1, inplace=True)
+test_dynamic_nonnumeric_neg.drop('sequence_nr', axis=1, inplace=True)
 test_labels.drop('sequence_nr', axis=1, inplace=True)
 
 # put into numpy matrices
 train_static_numeric = np.array(train_static_numeric)
 train_static_nonnumeric = np.array(train_static_nonnumeric, dtype='int')
 train_dynamic_numeric = train_dynamic_numeric_np
-train_dynamic_nonnumeric = train_dynamic_nonnumeric_np
+train_dynamic_nonnumeric_pos = train_dynamic_nonnumeric_pos_np
+train_dynamic_nonnumeric_neg = train_dynamic_nonnumeric_neg_np
 train_labels = np.array(train_labels.T)[0]
 
 test_static_numeric = np.array(test_static_numeric)
 test_static_nonnumeric = np.array(test_static_nonnumeric, dtype='int')
 test_dynamic_numeric = test_dynamic_numeric_np
-test_dynamic_nonnumeric = test_dynamic_nonnumeric_np
+test_dynamic_nonnumeric_pos = test_dynamic_nonnumeric_pos_np
+test_dynamic_nonnumeric_neg = test_dynamic_nonnumeric_neg_np
 test_labels = np.array(test_labels.T)[0]
 
 print 'Storing the dataset...'
 np.save('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/train_static_numeric.npy' % dataset, train_static_numeric)
 np.save('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/train_static_nonnumeric.npy' % dataset, train_static_nonnumeric)
 np.save('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/train_dynamic_numeric.npy' % dataset, train_dynamic_numeric)
-np.save('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/train_dynamic_nonnumeric.npy' % dataset, train_dynamic_nonnumeric)
+np.save('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/train_dynamic_nonnumeric_pos.npy' % dataset, train_dynamic_nonnumeric_pos)
+np.save('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/train_dynamic_nonnumeric_neg.npy' % dataset, train_dynamic_nonnumeric_neg)
 np.save('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/test_static_numeric.npy' % dataset, test_static_numeric)
 np.save('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/test_static_nonnumeric.npy' % dataset, test_static_nonnumeric)
 np.save('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/test_dynamic_numeric.npy' % dataset, test_dynamic_numeric)
-np.save('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/test_dynamic_nonnumeric.npy' % dataset, test_dynamic_nonnumeric)
+np.save('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/test_dynamic_nonnumeric_pos.npy' % dataset, test_dynamic_nonnumeric_pos)
+np.save('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/test_dynamic_nonnumeric_neg.npy' % dataset, test_dynamic_nonnumeric_neg)
 np.save('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/train_labels.npy' % dataset, train_labels)
 np.save('/storage/hpc_anna/GMiC/Data/BPIChallenge/%svar/preprocessed/test_labels.npy' % dataset, test_labels)
