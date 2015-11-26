@@ -111,8 +111,9 @@ class LSTMClassifier:
 
 class LSTMDiscriminative:
     
-    def __init__(self, lstmsize, dropout, optim, nepoch, batch_size):
+    def __init__(self, lstmsize, fcsize, dropout, optim, nepoch, batch_size):
         self.lstmsize = lstmsize
+        self.fcsize = fcsize
         self.dropout = dropout
         self.optim = optim
         self.nepoch = nepoch
@@ -130,8 +131,8 @@ class LSTMDiscriminative:
         model = Sequential()
         model.add(LSTM(data.shape[2], self.lstmsize, return_sequences=False))
         model.add(Dropout(self.dropout))
-        model.add(Dense(self.lstmsize, 100, activation='relu'))
-        model.add(Dense(100, 2, activation='softmax'))
+        model.add(Dense(self.lstmsize, self.fcsize, activation='relu'))
+        model.add(Dense(self.fcsize, 2, activation='softmax'))
 
         print('    Compiling the model...')
         #sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
