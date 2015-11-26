@@ -217,14 +217,13 @@ class GMMHMMClassifier(HMMClassifier):
 class MultinomialHMMClassifier(HMMClassifier):
 
     def train(self, nstates, niter, data, labels):
-        train_pos = self.tensor_to_list(data[labels==1, :, :])
-        train_neg = self.tensor_to_list(data[labels==0, :, :])
+        train_pos = list(fdata[labels==1, :, :].squeeze())
+        train_neg = list(fdata[labels==0, :, :].squeeze())
         print "Start training MultinomialHMMClassifier models..."
         model_pos = hmm.MultinomialHMM(nstates, n_iter=niter)
         model_neg = hmm.MultinomialHMM(nstates, n_iter=niter)
         model_pos.fit(train_pos)
         model_neg.fit(train_neg)
-
         return model_pos, model_neg
 
     def train_per_feature(self, nstates, niter, data, labels):
@@ -238,7 +237,7 @@ class MultinomialHMMClassifier(HMMClassifier):
         models_pos = [None] * nseqfeatures
         models_neg = [None] * nseqfeatures
         for fid in range(nseqfeatures):
-            print 'Training pair of models for feature %d/%d...' % (fid, nseqfeatures)
+            print 'Training pair of models for feature %d/%d...' % (fid + 1, nseqfeatures)
             fdata = data[:, fid, :].reshape((nsamples, 1, seqlen))
             model_pos, model_neg = self.train(nstates, niter, fdata, labels)
             models_pos[fid] = model_pos

@@ -18,18 +18,13 @@ test_labels = np.load('/storage/hpc_anna/GMiC/Data/BPIChallenge/f1var/preprocess
 
 
 # GMMHMM
-#train_dynamic_numeric
-#test_dynamic_numeric
-
-hmmcl = GMMHMMClassifier()
-model_pos, model_neg = hmmcl.train(3, 10, 10, 'full', train_dynamic_numeric, train_labels)
-print "HMM with dynamic features on validation set: %.4f" % hmmcl.test(model_pos, model_neg, test_dynamic_numeric, test_labels)
+#hmmcl = GMMHMMClassifier()
+#model_pos, model_neg = hmmcl.train(3, 10, 10, 'full', train_dynamic_numeric, train_labels)
+#print "HMM with dynamic features on validation set: %.4f" % hmmcl.test(model_pos, model_neg, test_dynamic_numeric, test_labels)
 
 
 
 # MultinomialHMMClassifier
-#train_dynamic_nonnumeric
-#test_dynamic_nonnumeric
 hmmcl = MultinomialHMMClassifier()
-model_pos, model_neg = hmmcl.train(3, 10, train_dynamic_nonnumeric, train_labels)
+model_pos, model_neg = hmmcl.train_per_feature(3, 10, train_dynamic_nonnumeric, train_labels)
 print "HMM with dynamic features on validation set: %.4f" % hmmcl.test(model_pos, model_neg, test_dynamic_numeric, test_labels)
