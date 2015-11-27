@@ -46,16 +46,16 @@ class LSTMClassifier:
         
         print('Build model...')
         model = Sequential()
-        model.add(LSTM(data.shape[2], self.lstmsize, return_sequences=True))  # Spearmint parameter: size
-        model.add(Dropout(self.dropout))              # Spearmint parameter: dropout
+        model.add(LSTM(data.shape[2], self.lstmsize, return_sequences=True))
+        model.add(Dropout(self.dropout))
         model.add(Dense(self.lstmsize, data.shape[2]))
-        model.add(Activation('relu'))        # Spearmint parameter: activation
+        model.add(Activation('relu'))
 
         print('Compiling model...')
-        model.compile(loss='mean_squared_error', optimizer=self.optim) # Spearmint parameter: optimizer
+        model.compile(loss='mean_squared_error', optimizer=self.optim)
 
         print("Training...")
-        model.fit(X_train, y_train, batch_size=self.batch_size, nb_epoch=self.nepoch, show_accuracy=True)       
+        model.fit(X_train, y_train, batch_size=self.batch_size, nb_epoch=self.nepoch, show_accuracy=False)       
         
         return model
     
@@ -103,7 +103,6 @@ class LSTMClassifier:
         extractor = Sequential()
         extractor.add(LSTM(data.shape[2], self.lstmsize, return_sequences=True,
                            weights=model.layers[0].get_weights()))
-        #extractor.add(Dropout(self.dropout))
         
         extractor.compile(loss='categorical_crossentropy', optimizer=self.optim, class_mode='categorical')
         activations = extractor.predict(data, batch_size=self.batch_size)
@@ -120,7 +119,7 @@ class LSTMDiscriminative:
         self.batch_size = batch_size
 
     def train(self, data, labels):
-        print('Training LSTMDescriminative model')
+        print('Training LSTMDiscriminative model')
         data = np.transpose(data, (0, 2, 1))
 
         # encode labels into one-hot
@@ -132,14 +131,14 @@ class LSTMDiscriminative:
         model.add(LSTM(data.shape[2], self.lstmsize, return_sequences=False))
         model.add(Dropout(self.dropout))
         model.add(Dense(self.lstmsize, self.fcsize, activation='relu'))
+        model.add(Dropout(self.dropout))
         model.add(Dense(self.fcsize, 2, activation='softmax'))
 
         print('    Compiling the model...')
-        #sgd = SGD(lr=0.1, decay=1e-6, momentum=0.9, nesterov=True)
         model.compile(loss='categorical_crossentropy', optimizer=self.optim, class_mode='categorical')
 
         print("    Training the model...")
-        model.fit(data, labels, batch_size=self.batch_size, nb_epoch=self.nepoch, show_accuracy=True)
+        model.fit(data, labels, batch_size=self.batch_size, nb_epoch=self.nepoch, show_accuracy=True, validation_split=0.3)
 
         return model 
 
@@ -166,28 +165,9 @@ class LSTMDiscriminative:
         extractor = Sequential()
         extractor.add(LSTM(data.shape[2], self.lstmsize, return_sequences=False,
                            weights=model.layers[0].get_weights()))
-        #extractor.add(Dropout(self.dropout))
         extractor.add(Dense(self.lstmsize, 100, activation='relu',
                             weights=model.layers[2].get_weights()))
         extractor.compile(loss='categorical_crossentropy', optimizer=self.optim, class_mode='categorical')
         activations = extractor.predict(data, batch_size=self.batch_size)
         return activations
-
-
-if __name__ == '__main__':
-
-    # load the data
-    static_train = np.load('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/train_static.npy')
-    dynamic_train = np.load('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/train_dynamic.npy')
-    static_val = np.load('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/test_static.npy')
-    dynamic_val = np.load('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/test_dynamic.npy')
-    labels_train = np.load('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/train_labels.npy')
-    labels_val = np.load('/storage/hpc_anna/GMiC/Data/syn_lstm_wins/test_labels.npy')
-
-    # train the model
-    lstmcl = LSTMDiscriminative(500, 0.5, 'rmsprop', nepoch=5, batch_size=384)
-    model = lstmcl.train(dynamic_train, labels_train)
-    print(lstmcl.test(model, dynamic_val, labels_val))
-
-
 
