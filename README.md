@@ -40,3 +40,9 @@ source ~/Python/bin/activate
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/lib64
 export THEANO_FLAGS='cuda.root=/usr/local/cuda,device=gpu,floatX=float32'
 ```
+
+### Requirements
+Tested on Ubuntu 14.04, Scientific Linux 6.5
+* CUDA-capable GPU to run LSTM experiements (will be much slower on CPU)
+* System libraries: `libyaml-dev`
+* Python 2.7 with `numpy`, `scipy`, `sklean`, `keras`
