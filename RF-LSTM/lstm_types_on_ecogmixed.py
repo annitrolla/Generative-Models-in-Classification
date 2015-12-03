@@ -25,11 +25,11 @@ g_lstmoptim = 'adagrad'
 g_lstmnepochs = 20
 g_lstmbatch = 64
 
-d_lstmsize = 300
-d_fcsize = 100
-d_lstmdropout = 0.8
-d_lstmoptim = 'adadelta'
-d_lstmnepochs = 20
+d_lstmsize = 462
+d_fcsize = 1000
+d_lstmdropout = 0.5
+d_lstmoptim = 'adam'
+d_lstmnepochs = 10
 d_lstmbatch = 128
 
 
@@ -61,7 +61,7 @@ nsamples = static_all.shape[0]
 ratios_generative = np.empty(len(labels_all))
 ratios_discriminative = np.empty(len(labels_all))
 activations_generative = np.empty((len(labels_all), g_lstmsize * 2)) # LSTM size in generative case
-activations_discriminative = np.empty((len(labels_all), 100)) # FC layer in disciminative case
+activations_discriminative = np.empty((len(labels_all), d_fcsize)) # FC layer in disciminative case
 
 predict_idx_list = np.array_split(range(nsamples), nfolds)
 for fid, predict_idx in enumerate(predict_idx_list):
@@ -72,6 +72,7 @@ for fid, predict_idx in enumerate(predict_idx_list):
     #
     # Generative LSTM
     #
+    """
     print "    Extracting ratios and activations from generative LSTM..."
 
     # train the models
@@ -86,7 +87,7 @@ for fid, predict_idx in enumerate(predict_idx_list):
     activations_pos = lstmcl.activations(model_pos, dynamic_all[predict_idx])
     activations_neg = lstmcl.activations(model_neg, dynamic_all[predict_idx])
     activations_generative[predict_idx] = np.concatenate((activations_pos[:, -1, :], activations_neg[:, -1, :]), axis=1)
-
+    """
 
     #
     # Discriminative LSTM
@@ -108,8 +109,8 @@ for fid, predict_idx in enumerate(predict_idx_list):
 # Prepare combined datasets for the future experiments
 #
 print 'Enriching the datasets...'
-enriched_by_generative_ratios = np.concatenate((static_all, np.matrix(ratios_generative).T), axis=1)
-enriched_by_generative_activations = np.concatenate((static_all, activations_generative), axis=1)
+#enriched_by_generative_ratios = np.concatenate((static_all, np.matrix(ratios_generative).T), axis=1)
+#enriched_by_generative_activations = np.concatenate((static_all, activations_generative), axis=1)
 enriched_by_discriminative_ratios = np.concatenate((static_all, np.matrix(ratios_discriminative).T), axis=1)
 enriched_by_discriminative_activations = np.concatenate((static_all, activations_discriminative), axis=1)
 
@@ -125,7 +126,7 @@ test_idx = list(set(range(0, nsamples)) - set(train_idx))
 # Train the models and report their performance
 #
 print 'Training the models...'
-
+"""
 # RF on static data enriched by generative ratios
 rf = RandomForestClassifier(n_estimators=nestimators)
 rf.fit(enriched_by_generative_ratios[train_idx], labels_all[train_idx])
@@ -135,6 +136,7 @@ print "===> RF on static enriched by generative ratios: %.4f" % rf.score(enriche
 rf = RandomForestClassifier(n_estimators=nestimators)
 rf.fit(enriched_by_generative_activations[train_idx], labels_all[train_idx])
 print "===> RF on static enriched by generative activations: %.4f" % rf.score(enriched_by_generative_activations[test_idx], labels_all[test_idx])
+"""
 
 # RF on static data enriched by discriminative ratios
 rf = RandomForestClassifier(n_estimators=nestimators)

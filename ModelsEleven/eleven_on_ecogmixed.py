@@ -13,15 +13,15 @@ from LSTM.lstm_classifier import LSTMClassifier
 
 # general parameters
 nfolds = 5
-nestimators = 300
+nestimators = 500
 nhmmstates = 3
 nhmmiter = 10
 hmmcovtype = "full"  # options: full, diag, spherical
 lstmsize = 2000
 lstmdropout = 0.5
-lstmoptim = 'adagrad'
+lstmoptim = 'rmsprop'
 lstmnepochs = 20
-ltmbatchsize = 64
+ltmbatchsize = 128
 
 #
 # Load the dataset

@@ -5,13 +5,16 @@ Classifier based on generative LSTM applied to syn_lstm_wins
 """
 
 import numpy as np
+from keras.optimizers import RMSprop
 from LSTM.lstm_classifier import LSTMClassifier
 
 # parameters
 lstmsize = 2000
-lstmdropout = 0.5
-lstmoptim = 'rmsprop'
-lstmnepochs = 10
+lstmdropout = 0.0
+#lstmoptim = 'rmsprop' # Default RMSProp is lr=0.001, rho=0.9, epsilon=1e-6
+#lstmoptim = RMSprop(lr=0.01, rho=0.9, epsilon=1e-6)
+lstmoptim = 'adadelta'
+lstmnepochs = 100
 lstmbatch = 64
 
 # load the dataset
@@ -30,7 +33,7 @@ test_idx = list(set(range(0, nsamples)) - set(train_idx))
 
 # train the model and report performance
 print 'Training the model...'
-lstmcl = LSTMClassifier(lstmsize, lstmdropout, lstmoptim, lstmnepochs, lstmbatch)
+lstmcl = LSTMClassifier(lstmsize, lstmdropout, lstmoptim, lstmnepochs, lstmbatch, validation_split=0.3)
 model_pos, model_neg = lstmcl.train(dynamic_train[train_idx], labels_train[train_idx])
 print 'Generative LSTM classifier on dynamic features: %.4f' % lstmcl.test(model_pos, model_neg, dynamic_train[test_idx], labels_train[test_idx])
 

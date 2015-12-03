@@ -16,15 +16,17 @@ from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM, GRU
 from DataNexus.datahandler import DataHandler
 from sklearn.preprocessing import OneHotEncoder
+from keras.regularizers import l2
 
 class LSTMClassifier:
     
-    def __init__(self, lstmsize, dropout, optim, nepoch, batch_size):
+    def __init__(self, lstmsize, dropout, optim, nepoch, batch_size, validation_split=None):
         self.lstmsize = lstmsize
         self.dropout = dropout
         self.optim = optim
         self.nepoch = nepoch
         self.batch_size = batch_size
+        self.validation_split = validation_split
 
     @staticmethod
     def sequence_lag(data):
@@ -55,7 +57,10 @@ class LSTMClassifier:
         model.compile(loss='mean_squared_error', optimizer=self.optim)
 
         print("Training...")
-        model.fit(X_train, y_train, batch_size=self.batch_size, nb_epoch=self.nepoch, show_accuracy=False)       
+        if self.validation_split is not None:
+            model.fit(X_train, y_train, batch_size=self.batch_size, nb_epoch=self.nepoch, validation_split=self.validation_split)
+        else:
+            model.fit(X_train, y_train, batch_size=self.batch_size, nb_epoch=self.nepoch, show_accuracy=False)       
         
         return model
     
@@ -110,13 +115,15 @@ class LSTMClassifier:
 
 class LSTMDiscriminative:
     
-    def __init__(self, lstmsize, fcsize, dropout, optim, nepoch, batch_size):
+    def __init__(self, lstmsize, fcsize, dropout, optim, nepoch, batch_size, validation_split=None, validation_data=None):
         self.lstmsize = lstmsize
         self.fcsize = fcsize
         self.dropout = dropout
         self.optim = optim
         self.nepoch = nepoch
         self.batch_size = batch_size
+        self.validation_split = validation_split
+        self.validation_data = validation_data
 
     def train(self, data, labels):
         print('Training LSTMDiscriminative model')
@@ -129,16 +136,19 @@ class LSTMDiscriminative:
         print('    Building the model...')
         model = Sequential()
         model.add(LSTM(data.shape[2], self.lstmsize, return_sequences=False))
+        #model.add(LSTM(self.lstmsize, self.lstmsize, return_sequences=True))
+        #model.add(LSTM(self.lstmsize, self.lstmsize, return_sequences=False))
         model.add(Dropout(self.dropout))
-        model.add(Dense(self.lstmsize, self.fcsize, activation='relu'))
+        model.add(Dense(self.lstmsize, self.fcsize, activation='relu', W_regularizer=l2(0.01)))
         model.add(Dropout(self.dropout))
-        model.add(Dense(self.fcsize, 2, activation='softmax'))
+        #model.add(Dense(self.fcsize, self.fcsize/2, activation='relu', W_regularizer=l2(0.01)))
+        model.add(Dense(self.fcsize, 2, activation='softmax', W_regularizer=l2(0.01)))
 
         print('    Compiling the model...')
         model.compile(loss='categorical_crossentropy', optimizer=self.optim, class_mode='categorical')
 
         print("    Training the model...")
-        model.fit(data, labels, batch_size=self.batch_size, nb_epoch=self.nepoch, show_accuracy=True, validation_split=0.3)
+        model.fit(data, labels, batch_size=self.batch_size, nb_epoch=self.nepoch, show_accuracy=True, validation_split=self.validation_split, validation_data=self.validation_data)
 
         return model 
 
@@ -165,7 +175,7 @@ class LSTMDiscriminative:
         extractor = Sequential()
         extractor.add(LSTM(data.shape[2], self.lstmsize, return_sequences=False,
                            weights=model.layers[0].get_weights()))
-        extractor.add(Dense(self.lstmsize, 100, activation='relu',
+        extractor.add(Dense(self.lstmsize, self.fcsize, activation='relu',
                             weights=model.layers[2].get_weights()))
         extractor.compile(loss='categorical_crossentropy', optimizer=self.optim, class_mode='categorical')
         activations = extractor.predict(data, batch_size=self.batch_size)
