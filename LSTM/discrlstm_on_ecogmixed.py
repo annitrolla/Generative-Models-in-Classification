@@ -10,7 +10,7 @@ from keras.optimizers import Adadelta
 from LSTM.lstm_classifier import LSTMDiscriminative
 
 # parameters
-lstmsize = 128
+lstmsize = 256
 fcsize = 100
 dropout = 0.5
 optim = Adadelta(lr=0.1, rho=0.95, epsilon=1e-6) #'adadelta'
