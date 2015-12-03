@@ -36,14 +36,14 @@ dynamic_train = dynamic_train[train_idx]
 labels_train = labels_train[train_idx]
 
 # train the model and report performance
-lstmcl = LSTMDiscriminative(lstmsize, fcsize, dropout, optim, nepochs, batchsize, validation_split=0.3)
-model = lstmcl.train(dynamic_train, labels_train)
-print 'Generative LSTM classifier on dynamic features: %.4f' % lstmcl.test(model, dynamic_val, labels_val)
-
-#dynamic_val = np.transpose(dynamic_val, (0, 2, 1))
-#enc = OneHotEncoder(sparse=False)
-#labels_val = enc.fit_transform(np.matrix(labels_val).T)
-
-#lstmcl = LSTMDiscriminative(lstmsize, fcsize, dropout, optim, nepochs, batchsize, validation_data=(dynamic_val, labels_val))
+#lstmcl = LSTMDiscriminative(lstmsize, fcsize, dropout, optim, nepochs, batchsize, validation_split=0.3)
 #model = lstmcl.train(dynamic_train, labels_train)
 #print 'Generative LSTM classifier on dynamic features: %.4f' % lstmcl.test(model, dynamic_val, labels_val)
+
+tr_dynamic_val = np.transpose(dynamic_val, (0, 2, 1))
+enc = OneHotEncoder(sparse=False)
+tr_labels_val = enc.fit_transform(np.matrix(labels_val).T)
+
+lstmcl = LSTMDiscriminative(lstmsize, fcsize, dropout, optim, nepochs, batchsize, validation_data=(tr_dynamic_val, tr_labels_val))
+model = lstmcl.train(dynamic_train, labels_train)
+print 'Generative LSTM classifier on dynamic features: %.4f' % lstmcl.test(model, dynamic_val, labels_val)
