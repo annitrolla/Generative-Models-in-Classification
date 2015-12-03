@@ -214,6 +214,33 @@ class GMMHMMClassifier(HMMClassifier):
                     success = True
         return model_pos, model_neg
 
+class GaussianHMMClassifier(HMMClassifier):
+
+    def train(self, nstates, nmix, niter, covtype, data, labels):
+        train_pos = self.tensor_to_list(data[labels==1, :, :])
+        train_neg = self.tensor_to_list(data[labels==0, :, :])
+        print "Start training the positive model..."
+        success = False
+        while not success:
+            try:
+                print "Training with covariance type %s" % covtype
+                model_pos = hmm.GaussianHMM(nstates, nmix, covariance_type=covtype, n_iter=niter)
+                model_neg = hmm.GaussianHMM(nstates, covariance_type=covtype, n_iter=niter)
+                model_pos.fit(train_pos)
+                model_neg.fit(train_neg)
+                success = True
+            except:
+                if covtype == 'full':
+                    covtype = 'diag'
+                elif covtype == 'diag':
+                    covtype = 'tied'
+                elif covtype == 'tied':
+                    covtype = 'spherical'
+                else:
+                    print 'Error: HMM sucks'
+                    success = True
+        return model_pos, model_neg
+
 class MultinomialHMMClassifier(HMMClassifier):
 
     def train(self, nstates, niter, fdata_pos, fdata_neg, labels):
