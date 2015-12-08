@@ -7,6 +7,7 @@ import numpy as np
 from hmmlearn import hmm
 from scipy.stats import mode
 from DataNexus.datahandler import DataHandler
+from sklearn.metrics import roc_auc_score
 
 class HMMClassifier:
     
@@ -25,17 +26,19 @@ class HMMClassifier:
     # building Maximum likelihood classifier
     def ispositive(self, instance, model_pos, model_neg):
         return model_pos.score(instance) >= model_neg.score(instance)
-
-    def accuracy(self, data, labels, model_pos, model_neg, show_prediction=False):
+    
+    def predict(self, data, model_pos, model_neg):
         pred = []
         for i in range(len(data)):
             pred.append(int(self.ispositive(data[i], model_pos, model_neg)))
-        acc = float(sum(pred == labels))/float(len(pred))
-        if show_prediction == True:
-            return acc, pred
-        else:
-            return acc
+        return pred
+
+    def accuracy(self, pred, labels):
+        return float(sum(pred == labels))/float(len(pred))
    
+    def auc(self, pred, labels):
+        return roc_auc_score(labels, pred)
+        
     def accuracy_per_feature(self, data, labels, models_pos, models_neg):
         
         # variables for convenience
@@ -91,10 +94,10 @@ class HMMClassifier:
                 print nstates, np.mean(accuracy_results[nstates]), np.std(accuracy_results[nstates])
                 f.write("%d, %s\n" % (nstates, ", ".join([str(x) for x in accuracy_results[nstates]])))
     
-    def train(self, nstates, niter, covtype, data, labels, hmmtype):
+    def train(self, nstates, niter, covtype, data, labels):
         train_pos = self.tensor_to_list(data[labels==1, :, :])
         train_neg = self.tensor_to_list(data[labels==0, :, :])
-        print "Start training the positive model..."
+        print "Start training the models..."
         success = False
         while not success:
             try:
@@ -118,7 +121,8 @@ class HMMClassifier:
 
     def test(self, model_pos, model_neg, data, labels):
         test = self.tensor_to_list(data)
-        return self.accuracy(test, labels, model_pos, model_neg)
+        pred = self.predict(test, model_pos, model_neg)
+        return self.accuracy(pred, labels), self.auc(pred, labels)
 
     def pos_neg_ratios(self, model_pos, model_neg, data):
         data = self.tensor_to_list(data)
@@ -192,13 +196,13 @@ class GMMHMMClassifier(HMMClassifier):
     def train(self, nstates, nmix, niter, covtype, data, labels):
         train_pos = self.tensor_to_list(data[labels==1, :, :])
         train_neg = self.tensor_to_list(data[labels==0, :, :])
-        print "Start training the positive model..."
+        print "Start training the models..."
         success = False
         while not success:
             try:
                 print "Training with covariance type %s" % covtype
                 model_pos = hmm.GMMHMM(nstates, nmix, covariance_type=covtype, n_iter=niter)
-                model_neg = hmm.GMMHMM(nstates, covariance_type=covtype, n_iter=niter)
+                model_neg = hmm.GMMHMM(nstates, nmix, covariance_type=covtype, n_iter=niter)
                 model_pos.fit(train_pos)
                 model_neg.fit(train_neg)
                 success = True 
