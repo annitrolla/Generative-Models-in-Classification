@@ -1,0 +1,22 @@
+Job launching after 0.69 seconds in submission.
+Running python job.
+Changed into dir /home/hpc_anna1985/Research/Generative-Models-in-Classification/Code/RF-HMM/spearmint/bpic
+Importing bpic.py
+Running bpic.main()
+Got result -0.701529471178
+Completed successfully in 132.13 seconds. [{u'main': -0.7015294711781257}]
+Anything printed here will end up in the output directory for job #7
+{u'nhmmstates': array([7]), u'nestimators': array([7]), u'nhmmiter': array([50])}
+7 700 500
+Start training the models...
+Training with covariance type full
+Training with covariance type diag
+Start training the models...
+Training with covariance type full
+Start training the models...
+Training with covariance type full
+Start training the models...
+Training with covariance type full
+Start training the models...
+Training with covariance type full
+Result: 0.7015

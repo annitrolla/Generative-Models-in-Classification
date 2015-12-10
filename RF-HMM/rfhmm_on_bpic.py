@@ -1,15 +1,8 @@
-"""
-
-Train the whole set of test on the "lstm wins" synthetic dataset
- 
-
-"""
 
 import numpy as np
 from numpy import inf
 from sklearn.ensemble import RandomForestClassifier
 from HMM.hmm_classifier import HMMClassifier
-from LSTM.lstm_classifier import LSTMClassifier 
 
 # general parameters
 nfolds = 5
