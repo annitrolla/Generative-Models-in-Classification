@@ -12,7 +12,7 @@ from LSTM.lstm_classifier import LSTMClassifier
 # parameters
 nfolds = 5
 
-lstmsize = 2000
+lstmsize = 1000
 lstmdropout = 0.0
 lstmoptim = 'adadelta'
 lstmnepochs = 20
@@ -38,7 +38,7 @@ for fid, val_idx in enumerate(val_idx_list):
     train_idx = list(set(range(nsamples)) - set(val_idx))
 
     # train the model and report performance
-    lstmcl = LSTMClassifier(lstmsize, lstmdropout, lstmoptim, lstmnepochs, lstmbatch)
+    lstmcl = LSTMClassifier(lstmsize, lstmdropout, lstmoptim, lstmnepochs, lstmbatch, validation_split=0.3)
     model_pos, model_neg = lstmcl.train(dynamic_train[train_idx], labels_train[train_idx])
     scores.append(lstmcl.test(model_pos, model_neg, dynamic_train[val_idx], labels_train[val_idx]))
 
