@@ -1,22 +1,22 @@
 {
     "language"        : "PYTHON",
-    "main-file"       : "ecogmixed.py",
-    "experiment-name" : "ecogmixed",
+    "main-file"       : "function.py",
+    "experiment-name" : "function",
     "likelihood"      : "GAUSSIAN",
     "variables" : {
         "lstmsize" : {
             "type" : "INT",
             "size" : 1,
-            "min"  : 100,
-            "max"  : 2000
+            "min"  : 10,
+            "max"  : 200
         },
-        "dropout" : {
+        "lstmdropout" : {
             "type" : "FLOAT",
             "size" : 1,
             "min"  : 0.0,
             "max"  : 0.5
         },
-        "optim" : {
+        "lstmoptim" : {
             "type" : "ENUM",
             "size" : 1,
             "options"  : ["adagrad", "rmsprop", "adam", "adadelta"] 
