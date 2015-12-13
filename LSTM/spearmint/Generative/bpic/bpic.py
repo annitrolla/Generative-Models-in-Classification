@@ -8,7 +8,7 @@ def bpic(lstmsize, lstmdropout, lstmoptim):
     lstmdropout = lstmdropout[0]
     lstmoptim = lstmoptim[0]
     lstmnepochs = 50
-    lstmbatchsize = 256
+    lstmbatchsize = 64
     nfolds = 5
 
     # Load the dataset
