@@ -1,0 +1,26 @@
+{
+    "language"        : "PYTHON",
+    "main-file"       : "function.py",
+    "experiment-name" : "function",
+    "likelihood"      : "GAUSSIAN",
+    "variables" : {
+        "lstmsize" : {
+            "type" : "INT",
+            "size" : 1,
+            "min"  : 10,
+            "max"  : 200
+        },
+        "lstmdropout" : {
+            "type" : "FLOAT",
+            "size" : 1,
+            "min"  : 0.0,
+            "max"  : 0.5
+        },
+        "lstmoptim" : {
+            "type" : "ENUM",
+            "size" : 1,
+            "options"  : ["adagrad", "rmsprop", "adam", "adadelta"] 
+        }
+    }
+}
+

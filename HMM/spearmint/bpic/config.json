@@ -1,0 +1,21 @@
+{
+    "language"        : "PYTHON",
+    "main-file"       : "bpic.py",
+    "experiment-name" : "bpic",
+    "likelihood"      : "GAUSSIAN",
+    "variables" : {
+        "nhmmstates" : {
+            "type" : "INT",
+            "size" : 1,
+            "min"  : 2,
+            "max"  : 10
+        },
+        "nhmmiter" : {
+            "type" : "INT",
+            "size" : 1,
+            "min"  : 1,
+            "max"  : 50
+        }
+    }
+}
+

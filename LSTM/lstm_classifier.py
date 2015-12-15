@@ -49,6 +49,8 @@ class LSTMClassifier:
         print('Build model...')
         model = Sequential()
         model.add(LSTM(data.shape[2], self.lstmsize, return_sequences=True))
+        #model.add(LSTM(self.lstmsize, self.lstmsize, return_sequences=True))
+        #model.add(LSTM(self.lstmsize, self.lstmsize, return_sequences=True))
         model.add(Dropout(self.dropout))
         model.add(Dense(self.lstmsize, data.shape[2]))
         model.add(Activation('relu'))
@@ -135,7 +137,7 @@ class LSTMDiscriminative:
         model.add(LSTM(data.shape[2], self.lstmsize, return_sequences=False))
         model.add(Dropout(self.dropout))
         model.add(Dense(self.lstmsize, self.fcsize, activation='relu', W_regularizer=l2(0.01)))
-        model.add(Dropout(self.dropout))
+        #model.add(Dropout(self.dropout))
         model.add(Dense(self.fcsize, 2, activation='softmax', W_regularizer=l2(0.01)))
 
         print('    Compiling the model...')

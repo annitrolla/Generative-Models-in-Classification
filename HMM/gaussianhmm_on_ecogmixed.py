@@ -1,25 +1,12 @@
-"""
-
-Classifier based on generative LSTM applied to syn_lstm_wins
-
-"""
-
 import numpy as np
-from keras.optimizers import RMSprop
-from sklearn.preprocessing import OneHotEncoder
-from LSTM.lstm_classifier import LSTMClassifier
+from HMM.hmm_classifier import HMMClassifier
 
 # parameters
 nfolds = 5
+nstates = 6
+niter = 50
 
-lstmsize = 1000
-lstmdropout = 0.0
-lstmoptim = 'adadelta'
-lstmnepochs = 20
-lstmbatch = 64
-
-# load the dataset
-print 'Loading the dataset..'
+# load data
 static_train = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/fourier/train_data.npy')
 dynamic_train = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/train_data.npy')
 static_val = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/fourier/test_data.npy')
@@ -38,9 +25,8 @@ for fid, val_idx in enumerate(val_idx_list):
     train_idx = list(set(range(nsamples)) - set(val_idx))
 
     # train the model and report performance
-    lstmcl = LSTMClassifier(lstmsize, lstmdropout, lstmoptim, lstmnepochs, lstmbatch, validation_split=0.3)
-    model_pos, model_neg = lstmcl.train(dynamic_train[train_idx], labels_train[train_idx])
-    scores.append(lstmcl.test(model_pos, model_neg, dynamic_train[val_idx], labels_train[val_idx]))
+    hmmcl = HMMClassifier()
+    model_pos, model_neg = hmmcl.train(nstates, niter, 'full', dynamic_train[train_idx], labels_train[train_idx])
+    scores.append(hmmcl.test(model_pos, model_neg, dynamic_train[val_idx], labels_train[val_idx]))
 
-print 'Generative LSTM classifier on dynamic features: %.4f (+- %.4f) %s' % (np.mean(scores), np.std(scores), scores)
-
+print "===> (7) HMM with dynamic features on CV: %.4f (+/- %.4f) %s" % (np.mean(scores), np.std(scores), scores)

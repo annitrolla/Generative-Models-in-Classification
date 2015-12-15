@@ -1,0 +1,25 @@
+{
+    "language"        : "PYTHON",
+    "main-file"       : "bpic.py",
+    "experiment-name" : "bpic",
+    "likelihood"      : "GAUSSIAN",
+    "variables" : {
+        "lstmsize" : {
+            "type" : "INT",
+            "size" : 1,
+            "min"  : 51,
+            "max"  : 150
+        },
+        "lstmdropout" : {
+            "type" : "FLOAT",
+            "size" : 1,
+            "min"  : 0.0,
+            "max"  : 0.5
+        },
+        "lstmoptim" : {
+            "type" : "ENUM",
+            "size" : 1,
+            "options"  : ["adagrad", "rmsprop", "adam", "adadelta"] 
+        }
+    }
+}
