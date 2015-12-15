@@ -6,61 +6,61 @@ After this augmented dataset is created we train and evaluate Random Forest on i
 """
 
 import numpy as np
-from DataNexus.datahandler import DataHandler 
-from DataNexus.fourier import Fourier
 from HMM.hmm_classifier import HMMClassifier 
 from sklearn.ensemble import RandomForestClassifier
-import cPickle
 
 # parameters
-NSTATES = 30
-NITERS = 5
+nhmmstates = 3
+nestimators = 500
+nhmmiter = 20
+nfolds = 5
+hmmcovtype = 'full'
 
-# load the data
-print "Reading data..."
-train_data = np.load("/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/train_data.npy")
-train_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/train_labels.npy")
-test_data = np.load("/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/test_data.npy")
-test_labels = np.load("/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/test_labels.npy")
+# load the dataset
+static_train = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/fourier/train_data.npy')
+dynamic_train = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/train_data.npy')
+static_val = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/fourier/test_data.npy')
+dynamic_val = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/test_data.npy')
+labels_train = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/train_labels.npy')
+labels_val = np.load('/storage/hpc_anna/GMiC/Data/ECoGmixed/preprocessed/test_labels.npy')
+    
+# merge train and test
+static_all = np.concatenate((static_train, static_val), axis=0)
+dynamic_all = np.concatenate((dynamic_train, dynamic_val), axis=0)
+labels_all = np.concatenate((labels_train, labels_val), axis=0)
+nsamples = static_all.shape[0]
 
-# split the training data into two halves
-#   fh stands for first half
-#   sh stands for second half
-print "Splitting data in two halves..."
-fh_data, fh_labels, sh_data, sh_labels = DataHandler.split(0.5, train_data, train_labels)
+# prepare where to store the ratios
+ratios_all_hmm = np.empty(len(labels_all))
 
-# train HMM on first 50% of the training set
-print "Training HMM classifier..."
-hmmcl = HMMClassifier()
-model_pos, model_neg = hmmcl.train(NSTATES, NITERS, fh_data, fh_labels)
+# split indices into folds
+enrich_idx_list = np.array_split(range(nsamples), nfolds)
 
-# feed second 50% of the training set into the HMM to obtain
-# pos/neg ratio for every sequence in the second half of the training set
-print "Extracting ratios based on the HMM model..."
-sh_ratios = hmmcl.pos_neg_ratios(model_pos, model_neg, sh_data)
-test_ratios = hmmcl.pos_neg_ratios(model_pos, model_neg, test_data)
+# CV for dataset enrichment
+for fid, enrich_idx in enumerate(enrich_idx_list):
+    print "Current fold is %d / %d" % (fid, nfolds)
+    train_idx = list(set(range(nsamples)) - set(enrich_idx))
 
-# apply fourier transform on the second 50% of the training set
-print "Fouriering the second half of the dataset..."
-fourier_sh_data = Fourier.data_to_fourier(sh_data)
-fourier_test_data = Fourier.data_to_fourier(test_data)
+    # extract predictions using HMM on dynamic
+    hmmcl = HMMClassifier()
+    model_pos, model_neg = hmmcl.train(nhmmstates, nhmmiter, hmmcovtype, 
+                                       dynamic_all[train_idx], labels_all[train_idx])
+    ratios_all_hmm[enrich_idx] = hmmcl.pos_neg_ratios(model_pos, model_neg, dynamic_all[enrich_idx])
+    
+# dataset for hybrid learning
+enriched_by_hmm = np.concatenate((static_all, np.matrix(ratios_all_hmm).T), axis=1)
+    
+# CV for accuracy estimation
+val_idx_list = np.array_split(range(nsamples), nfolds)
+scores = []
+for fid, val_idx in enumerate(val_idx_list):
+    print "Current fold is %d / %d" % (fid, nfolds)
+    train_idx = list(set(range(nsamples)) - set(val_idx))
+    
+    # Hybrid on features enriched by HMM (3)
+    rf = RandomForestClassifier(n_estimators=nestimators)
+    rf.fit(enriched_by_hmm[train_idx], labels_all[train_idx])
+    scores.append(rf.score(enriched_by_hmm[val_idx], labels_all[val_idx]))
+    
+print "===> (3) Hybrid (RF) on features enriched by HMM: %.4f (+/- %.4f) %s" % (mean(scores), std(scores), scores)
 
-# augment fourier results of the second 50% train with the ratios thus producing an enriched dataset
-print "Merging Fourier features and HMM-based ratios..."
-enriched_sh_data = np.hstack((fourier_sh_data, sh_ratios.reshape(len(sh_ratios), 1)))
-enriched_test_data = np.hstack((fourier_test_data, test_ratios.reshape(len(test_ratios), 1)))
-
-# train RF on the enriched dataset
-print "Training RF on the merged dataset..."
-rf = RandomForestClassifier(n_estimators=500)
-rf.fit(enriched_sh_data, sh_labels)
-
-# store the model
-print "Storing the model..."
-with open('../../Results/models/rfhmm.pkl', 'w') as f:
-    cPickle.dump(rf, f)
-
-# test RF on the test set
-print "Testing the final model..."
-print str(rf.score(enriched_sh_data, sh_labels)) + " - accuracy on train data"
-print str(rf.score(enriched_test_data, test_labels)) + " - accuracy on test data"

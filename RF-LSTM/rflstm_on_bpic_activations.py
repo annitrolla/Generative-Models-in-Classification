@@ -1,14 +1,16 @@
 import numpy as np
 from numpy import inf
 from sklearn.ensemble import RandomForestClassifier
-from HMM.hmm_classifier import HMMClassifier
+from LSTM.lstm_classifier import LSTMClassifier
 
 # parameters
-nfolds = 5
+lstmsize = 500
+lstmdropout = 0.0
+lstmoptim = 'adadelta'
+lstmnepochs = 50
+lstmbatchsize = 256
 nestimators = 500
-nhmmstates = 3
-nhmmiter = 20
-hmmcovtype = "full"  # options: full, diag, spherical
+nfolds = 5
 
 # load the dataset
 print 'Loading the dataset..'
@@ -27,7 +29,7 @@ labels_all = np.concatenate((labels_train, labels_val), axis=0)
 nsamples = static_all.shape[0]
 
 # prepare where to store the ratios
-ratios_all_hmm = np.empty(len(labels_all))
+activations_all = np.empty((len(labels_all), lstmsize * 2))
 
 # split indices into folds
 enrich_idx_list = np.array_split(range(nsamples), nfolds)
@@ -37,14 +39,19 @@ for fid, enrich_idx in enumerate(enrich_idx_list):
     print "Current fold is %d / %d" % (fid + 1, nfolds)
     train_idx = list(set(range(nsamples)) - set(enrich_idx))
 
-    # extract predictions using HMM on dynamic
-    hmmcl = HMMClassifier()
-    model_pos, model_neg = hmmcl.train(nhmmstates, nhmmiter, hmmcovtype, 
-                                       dynamic_all[train_idx], labels_all[train_idx])
-    ratios_all_hmm[enrich_idx] = hmmcl.pos_neg_ratios(model_pos, model_neg, dynamic_all[enrich_idx])
+    # train models for enrichment
+    lstmcl = LSTMClassifier(lstmsize, lstmdropout, lstmoptim, lstmnepochs, lstmbatchsize)
+    model_pos, model_neg = lstmcl.train(dynamic_all[train_idx], labels_all[train_idx])
+
+    # extract activations
+    activations_pos = lstmcl.activations(model_pos, dynamic_all[enrich_idx])
+    activations_neg = lstmcl.activations(model_neg, dynamic_all[enrich_idx])
+    activations_all[enrich_idx] = np.concatenate((activations_pos[:, -1, :], activations_neg[:, -1, :]), axis=1)
 
 # dataset for hybrid learning
-enriched_by_hmm = np.concatenate((static_all, np.matrix(ratios_all_hmm).T), axis=1)
+enriched_by_lstm = np.concatenate((static_all, activations_all), axis=1)
+print static_all.shape
+print enriched_by_lstm.shape
 
 # CV for accuracy estimation
 val_idx_list = np.array_split(range(nsamples), nfolds)
@@ -55,8 +62,8 @@ for fid, val_idx in enumerate(val_idx_list):
     
     # Hybrid on features enriched by HMM (3)
     rf = RandomForestClassifier(n_estimators=nestimators)
-    rf.fit(enriched_by_hmm[train_idx], labels_all[train_idx])
-    scores.append(rf.score(enriched_by_hmm[val_idx], labels_all[val_idx]))
+    rf.fit(enriched_by_lstm[train_idx], labels_all[train_idx])
+    scores.append(rf.score(enriched_by_lstm[val_idx], labels_all[val_idx]))
 
-print "===> (3) Hybrid (RF) on features enriched by HMM: %.4f (+/- %.4f) %s" % (np.mean(scores), np.std(scores), scores)
+print "===> (4) Hybrid (RF) on features (activations) enriched by LSTM: %.4f (+/- %.4f) %s" % (np.mean(scores), np.std(scores), scores)
 
