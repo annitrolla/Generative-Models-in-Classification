@@ -14,8 +14,8 @@ from LSTM.lstm_classifier import LSTMClassifier
 # general parameters
 nfolds = 5
 nestimators = 500
-nhmmstates = 3
-nhmmiter = 10
+nhmmstates = 6
+nhmmiter = 50
 hmmcovtype = "full"  # options: full, diag, spherical
 lstmsize = 2000
 lstmdropout = 0.0
