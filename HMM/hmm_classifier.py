@@ -8,6 +8,7 @@ from hmmlearn import hmm
 from scipy.stats import mode
 from DataNexus.datahandler import DataHandler
 from sklearn.metrics import roc_auc_score
+import traceback
 
 class HMMClassifier:
     
@@ -108,6 +109,10 @@ class HMMClassifier:
                 model_neg.fit(train_neg)
                 success = True 
             except:
+                print '------------------------------------------------------------'
+                traceback.print_exc()
+                print '------------------------------------------------------------'
+
                 if covtype == 'full':
                     covtype = 'diag'
                 elif covtype == 'diag':
