@@ -44,8 +44,10 @@ class LSTMClassifier:
         #   sequences in the test set will miss one observation from the begining [2...300]
         #             (there is nothing to predict the first observation from)
         data = np.transpose(data, (0, 2, 1))
-        X_train, y_train = self.sequence_lag(data)
-        
+        #X_train, y_train = self.sequence_lag(data)
+        X_train = data[:, :-1, :]
+        y_train = data[:, 1:, :]
+
         print('Build model...')
         model = Sequential()
         model.add(LSTM(data.shape[2], self.lstmsize, return_sequences=True))
