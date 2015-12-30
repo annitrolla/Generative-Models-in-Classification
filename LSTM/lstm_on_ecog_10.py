@@ -45,11 +45,15 @@ nsamples = static_all.shape[0]
 #
 
 # dataset to check how generative models perform if provided with static features along with dynamic
-static_as_dynamic = np.zeros((static_all.shape[0], static_all.shape[1], dynamic_all.shape[2]))
+print 'static_all', static_all.shape
+print 'dynamic_all', dynamic_all.shape
+fake_seqlen = 100 # dynamic_all.shape[2]
+static_as_dynamic = np.zeros((static_all.shape[0], static_all.shape[1], fake_seqlen))
+print 'static_as_dynamic', static_as_dynamic.shape
 for i in range(static_all.shape[0]):
-    static_as_dynamic[i, :, :] = np.tile(static_all[i, :], (dynamic_all.shape[2], 1)).T
-dynamic_and_static_as_dynamic = np.concatenate((dynamic_all, static_as_dynamic + np.random.uniform(-0.0001, 0.0001, static_as_dynamic.shape)), axis=1)
-
+    static_as_dynamic[i, :, :] = np.tile(static_all[i, :], (fake_seqlen, 1)).T
+dynamic_and_static_as_dynamic = np.concatenate((dynamic_all[:, :, :fake_seqlen], static_as_dynamic + np.random.uniform(-0.0001, 0.0001, static_as_dynamic.shape)), axis=1)
+print 'dynamic_and_static_as_dynamic', dynamic_and_static_as_dynamic.shape
 
 #
 # k-fold CV for performance estimation

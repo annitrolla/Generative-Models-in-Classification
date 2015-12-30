@@ -62,7 +62,8 @@ for fid, val_idx in enumerate(val_idx_list):
     # HMM on dynamic and static (turned into fake sequences) (9)
     hmmcl = HMMClassifier()
     model_pos, model_neg = hmmcl.train(nhmmstates, nhmmiter, hmmcovtype, dynamic_and_static_as_dynamic[train_idx], labels_all[train_idx])
-    scores[9].append(hmmcl.test(model_pos, model_neg, dynamic_and_static_as_dynamic[val_idx], labels_all[val_idx]))
+    acc, auc = hmmcl.test(model_pos, model_neg, dynamic_and_static_as_dynamic[val_idx], labels_all[val_idx])
+    scores[9].append(acc)
 
 print "===> (9) HMM on dynamic and static features: %.4f (+/- %.4f) %s" % (np.mean(scores[9]), np.std(scores[9]), scores[9])
 

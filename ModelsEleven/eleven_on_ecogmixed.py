@@ -17,7 +17,7 @@ nestimators = 500
 nhmmstates = 6
 nhmmiter = 50
 hmmcovtype = "full"  # options: full, diag, spherical
-lstmsize = 2000
+lstmsize = 1000
 lstmdropout = 0.0
 lstmoptim = 'adadelta'
 lstmnepochs = 50
@@ -168,7 +168,8 @@ for fid, val_idx in enumerate(val_idx_list):
     # HMM on dynamic and static (turned into fake sequences) (9)
     #hmmcl = HMMClassifier()
     #model_pos, model_neg = hmmcl.train(nhmmstates, nhmmiter, hmmcovtype, dynamic_and_static_as_dynamic[train_idx], labels_all[train_idx])
-    #scores[9].append(hmmcl.test(model_pos, model_neg, dynamic_and_static_as_dynamic[val_idx], labels_all[val_idx]))
+    #acc, auc = hmmcl.test(model_pos, model_neg, dynamic_and_static_as_dynamic[val_idx], labels_all[val_idx])
+    #scores[9].append(acc)
 
     # LSTM on dynamic and static (turned into fake sequences) (10)
     #lstmcl = LSTMClassifier(lstmsize, lstmdropout, lstmoptim, lstmnepochs, lstmbatchsize)
