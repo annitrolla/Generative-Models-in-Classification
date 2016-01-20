@@ -13,11 +13,11 @@ from LSTM.lstm_classifier import LSTMClassifier
 # general parameters
 nfolds = 5
 nestimators = 500
-lstmsize = 2000
+lstmsize = 100
 lstmdropout = 0.0
 lstmoptim = 'adadelta'
 lstmnepochs = 50
-lstmbatchsize = 64
+lstmbatchsize = 256
 
 #
 # Load the dataset
@@ -25,7 +25,7 @@ lstmbatchsize = 64
 print 'Loading the dataset..'
 static_all = np.load('/storage/hpc_anna/GMiC/Data/Inforegister/preprocessed/train_static.npy')
 dynamic_all = np.load('/storage/hpc_anna/GMiC/Data/Inforegister/preprocessed/train_dynamic.npy')
-labels_all = np.revel(np.load('/storage/hpc_anna/GMiC/Data/Inforegister/preprocessed/train_labels.npy'))
+labels_all = np.load('/storage/hpc_anna/GMiC/Data/Inforegister/preprocessed/train_labels.npy')
 nsamples = static_all.shape[0]
 
 

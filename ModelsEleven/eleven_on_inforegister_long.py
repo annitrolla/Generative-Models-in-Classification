@@ -23,7 +23,7 @@ hmmcovtype = "full"  # options: full, diag, spherical
 print 'Loading the dataset..'
 static_all = np.load('/storage/hpc_anna/GMiC/Data/Inforegister/preprocessed/train_static.npy')
 dynamic_all = np.load('/storage/hpc_anna/GMiC/Data/Inforegister/preprocessed/train_dynamic.npy')
-labels_all = np.ravel(np.load('/storage/hpc_anna/GMiC/Data/Inforegister/preprocessed/train_labels.npy'))
+labels_all = np.load('/storage/hpc_anna/GMiC/Data/Inforegister/preprocessed/train_labels.npy')
 
 nsamples = static_all.shape[0]
 
