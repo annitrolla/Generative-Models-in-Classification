@@ -15,7 +15,7 @@ dynamic = pd.read_csv('/storage/hpc_anna/GMiC/Data/Inforegister/raw/dynamic.csv'
 labels = pd.read_csv('/storage/hpc_anna/GMiC/Data/Inforegister/raw/labels.csv', sep=',', header=0)
 
 # parameters
-seqlen = 3
+seqlen = 5
 
 #
 # static features
@@ -57,13 +57,13 @@ train_labels = np.ravel(np.array(labels))
 #
 # oversampling
 #
-positive_idx = np.where(train_labels == 1)[0]
-n_positive = sum(train_labels)
-n_negative = len(train_labels) - n_positive
-oversample_idx = np.random.choice(positive_idx, n_negative - n_positive, replace=True)
-train_static = np.concatenate((train_static, train_static[oversample_idx]))
-train_dynamic = np.concatenate((train_dynamic, train_dynamic[oversample_idx]))
-train_labels = np.concatenate((train_labels, train_labels[oversample_idx]))
+#positive_idx = np.where(train_labels == 1)[0]
+#n_positive = sum(train_labels)
+#n_negative = len(train_labels) - n_positive
+#oversample_idx = np.random.choice(positive_idx, n_negative - n_positive, replace=True)
+#train_static = np.concatenate((train_static, train_static[oversample_idx]))
+#train_dynamic = np.concatenate((train_dynamic, train_dynamic[oversample_idx]))
+#train_labels = np.concatenate((train_labels, train_labels[oversample_idx]))
 
 
 #

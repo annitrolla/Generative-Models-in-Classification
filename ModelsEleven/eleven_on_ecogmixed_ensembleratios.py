@@ -95,10 +95,8 @@ for fid, predict_idx in enumerate(predict_idx_list):
 #
 
 # datasets for ensemble learning
-#predictions_combined_rf_hmm = np.concatenate((predictions_all_rf, predictions_all_hmm), axis=1)
-#predictions_combined_rf_lstm = np.concatenate((predictions_all_rf, predictions_all_lstm), axis=1)
-predictions_combined_rf_hmm = np.concatenate((predictions_all_rf, ratios_all_hmm), axis=1)
-predictions_combined_rf_lstm = np.concatenate((predictions_all_rf, ratios_all_lstm), axis=1)
+predictions_combined_rf_hmm = np.concatenate((predictions_all_rf, ratios_all_hmm.reshape((ratios_all_hmm.shape[0], 1))), axis=1)
+predictions_combined_rf_lstm = np.concatenate((predictions_all_rf, ratios_all_lstm.reshape((ratios_all_lstm.shape[0], 1))), axis=1)
 
 # datasets for hybrid learning
 enriched_by_hmm = np.concatenate((static_all, np.matrix(ratios_all_hmm).T), axis=1)
