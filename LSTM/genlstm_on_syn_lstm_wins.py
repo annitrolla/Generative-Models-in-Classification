@@ -8,7 +8,7 @@ import numpy as np
 from LSTM.lstm_classifier import LSTMClassifier
 
 # parameters
-lstmsize = 2000
+lstmsize = 300
 lstmdropout = 0.5
 lstmoptim = 'rmsprop'
 lstmnepochs = 10

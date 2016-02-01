@@ -11,7 +11,7 @@ from keras.preprocessing import sequence
 from keras.optimizers import SGD, RMSprop, Adagrad
 from keras.utils import np_utils
 from keras.models import Sequential
-from keras.layers.core import Dense, Dropout, Activation
+from keras.layers.core import Dense, Dropout, Activation, TimeDistributedDense
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM, GRU
 from DataNexus.datahandler import DataHandler
@@ -48,13 +48,14 @@ class LSTMClassifier:
         X_train = data[:, :-1, :]
         y_train = data[:, 1:, :]
 
+	seqlen = data.shape[1]
+	nfeatures = data.shape[2]
+
         print('Build model...')
         model = Sequential()
-        model.add(LSTM(data.shape[2], self.lstmsize, return_sequences=True))
-        #model.add(LSTM(self.lstmsize, self.lstmsize, return_sequences=True))
-        #model.add(LSTM(self.lstmsize, self.lstmsize, return_sequences=True))
+        model.add(LSTM(self.lstmsize, return_sequences=True, input_shape=(seqlen, nfeatures)))
         model.add(Dropout(self.dropout))
-        model.add(Dense(self.lstmsize, data.shape[2]))
+        model.add(TimeDistributedDense(y_train.shape[2]))
         model.add(Activation('relu'))
 
         print('Compiling model...')
@@ -105,13 +106,15 @@ class LSTMClassifier:
         https://github.com/fchollet/keras/issues/41
         """
         data = np.transpose(data, (0, 2, 1))
-        
+	seqlen = data.shape[1]
+        nfeatures = data.shape[2]
+
         extractor = Sequential()
-        extractor.add(LSTM(data.shape[2], self.lstmsize, return_sequences=True,
-                           weights=model.layers[0].get_weights()))
-        
+        extractor.add(LSTM(self.lstmsize, return_sequences=True, input_shape=(seqlen, nfeatures), weights=model.layers[0].get_weights()))
+
         extractor.compile(loss='categorical_crossentropy', optimizer=self.optim, class_mode='categorical')
         activations = extractor.predict(data, batch_size=self.batch_size)
+
         return activations
 
 class LSTMDiscriminative:
