@@ -91,16 +91,16 @@ predictions_combined_rf_lstm = np.concatenate((predictions_all_rf, ratios_all_ls
 enriched_by_lstm = np.concatenate((static_all, np.matrix(ratios_all_lstm).T), axis=1)
 
 # dataset to confirm that RF on dynamic is not better than generative models on dynamic data
-#dynamic_as_static = dynamic_all.reshape((dynamic_all.shape[0], dynamic_all.shape[1] * dynamic_all.shape[2]))
+dynamic_as_static = dynamic_all.reshape((dynamic_all.shape[0], dynamic_all.shape[1] * dynamic_all.shape[2]))
 
 # dataset to confirm that RF on naive combination of features is not better than our fancy models
-#static_and_dynamic_as_static = np.concatenate((static_all, dynamic_as_static), axis=1)
+static_and_dynamic_as_static = np.concatenate((static_all, dynamic_as_static), axis=1)
 
 # dataset to check how generative models perform if provided with static features along with dynamic
-#static_as_dynamic = np.zeros((static_all.shape[0], static_all.shape[1], dynamic_all.shape[2]))
-#for i in range(static_all.shape[0]):
-#    static_as_dynamic[i, :, :] = np.tile(static_all[i, :], (dynamic_all.shape[2], 1)).T
-#dynamic_and_static_as_dynamic = np.concatenate((dynamic_all, static_as_dynamic + np.random.uniform(-0.0001, 0.0001, static_as_dynamic.shape)), axis=1)
+static_as_dynamic = np.zeros((static_all.shape[0], static_all.shape[1], dynamic_all.shape[2]))
+for i in range(static_all.shape[0]):
+    static_as_dynamic[i, :, :] = np.tile(static_all[i, :], (dynamic_all.shape[2], 1)).T
+dynamic_and_static_as_dynamic = np.concatenate((dynamic_all, static_as_dynamic + np.random.uniform(-0.0001, 0.0001, static_as_dynamic.shape)), axis=1)
 
 
 #
