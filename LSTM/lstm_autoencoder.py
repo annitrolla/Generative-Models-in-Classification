@@ -50,13 +50,13 @@ lstmbatch = 768
 
 # LSTM with RepeatVector
 model = Sequential()
-model.add(LSTM(10000, return_sequences=False, input_shape=(seqlen, nfeatures))) #first screen: 256
-#model.add(Dense(768))
+model.add(LSTM(3500, return_sequences=False, input_shape=(seqlen, nfeatures))) #first screen: 256
+#model.add(Dense(3500))
 model.add(RepeatVector(seqlen))
-model.add(LSTM(10000, return_sequences=True))
+model.add(LSTM(3500, return_sequences=True))
 model.add(TimeDistributedDense(50))
 model.compile(loss='mse', optimizer='rmsprop')
-model.fit(dynamic_train, dynamic_train, batch_size=lstmbatch, nb_epoch=lstmnepochs, validation_split=0.3)
+model.fit(dynamic_train, dynamic_train, batch_size=32, nb_epoch=50, validation_split=0.3)
 
 
 # Plot of train and reconstruction matrix
