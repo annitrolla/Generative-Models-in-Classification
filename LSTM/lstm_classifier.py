@@ -54,9 +54,9 @@ class LSTMClassifier:
         print('Build model...')
         model = Sequential()
         model.add(LSTM(self.lstmsize, return_sequences=True, input_shape=(seqlen, nfeatures)))
-        model.add(Dropout(self.dropout))
+        #model.add(Dropout(self.dropout))
         model.add(TimeDistributedDense(y_train.shape[2]))
-        model.add(Activation('relu'))
+        #model.add(Activation('relu'))
 
         print('Compiling model...')
         model.compile(loss='mean_squared_error', optimizer=self.optim)

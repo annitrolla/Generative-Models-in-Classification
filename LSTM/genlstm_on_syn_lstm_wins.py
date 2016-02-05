@@ -1,18 +1,12 @@
-"""
-
-Classifier based on generative LSTM applied to syn_lstm_wins
-
-"""
-
 import numpy as np
 from LSTM.lstm_classifier import LSTMClassifier
 
 # parameters
-lstmsize = 300
-lstmdropout = 0.5
+lstmsize = 512
+lstmdropout = 0.0
 lstmoptim = 'rmsprop'
-lstmnepochs = 10
-lstmbatch = 128
+lstmnepochs = 50
+lstmbatch = 32
 
 # load the dataset
 print 'Loading the dataset..'
