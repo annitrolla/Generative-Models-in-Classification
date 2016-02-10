@@ -17,6 +17,7 @@ from keras.layers.recurrent import LSTM, GRU
 from DataNexus.datahandler import DataHandler
 from sklearn.preprocessing import OneHotEncoder
 from keras.regularizers import l2
+from keras.callbacks import EarlyStopping
 
 class LSTMClassifier:
     
@@ -54,7 +55,7 @@ class LSTMClassifier:
         print('Build model...')
         model = Sequential()
         model.add(LSTM(self.lstmsize, return_sequences=True, input_shape=(seqlen, nfeatures)))
-        #model.add(Dropout(self.dropout))
+        model.add(Dropout(self.dropout))
         model.add(TimeDistributedDense(y_train.shape[2]))
         #model.add(Activation('relu'))
 
@@ -62,8 +63,10 @@ class LSTMClassifier:
         model.compile(loss='mean_squared_error', optimizer=self.optim)
 
         print("Training...")
-        model.fit(X_train, y_train, batch_size=self.batch_size, nb_epoch=self.nepoch, validation_split=self.validation_split)
-        
+        #early_stopping = EarlyStopping(monitor='val_loss', patience=3, verbose=1, mode='min')
+        #model.fit(X_train, y_train, batch_size=self.batch_size, nb_epoch=self.nepoch, validation_split=0.3) #, callbacks=[early_stopping])
+        model.fit(X_train, y_train, batch_size=self.batch_size, nb_epoch=self.nepoch)
+
         return model
     
     def train(self, data, labels):
