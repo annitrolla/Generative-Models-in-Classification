@@ -3,13 +3,10 @@
 Explore all models' performance for the following parameters:
 nsamples, nfeatures, nseqfeatures, seqlen
 
-The list of models includes: 
-RF on static, HMM on dynamic, RF on dynamic, LSTM on dynamic, 
-RF+HMM on both, RF+LSTM on both, LSTM on both
-
 """
 
 import numpy as np
+from numpy import inf
 import argparse
 from sklearn.ensemble import RandomForestClassifier
 from HMM.hmm_classifier import HMMClassifier
@@ -28,6 +25,10 @@ parser.add_argument('-l', '--seqlen', dest='seqlen', type=int, required=True,
                           help='length of a generated sequence')
 args = parser.parse_args()
 
+#
+# Parameters
+#
+
 # read parameters
 nsamples = int(args.nsamples)
 nfeatures = int(args.nfeatures)
@@ -35,125 +36,192 @@ nseqfeatures = int(args.nseqfeatures)
 seqlen = int(args.seqlen)
 
 # general parameters
-lstm_nepochs = 20
+nestimators = 100
+nhmmstates = 2
+nhmmiter = 10
+hmmcovtype = "full" 
+lstmsize = 256
+lstmdropout = 0.0
+lstmoptim = 'rmsprop'
+lstmnepochs = 20
+lstmbatchsize = 32
 
 # open file to store results
 f = open('../../Results/grid_lstm_wins.csv', 'a')
 
+
+#
+# Load data
+#
+
 # generate the dataset
-static_train, dynamic_train, static_val, dynamic_val, labels_train, labels_val = generate_lstm_wins(nsamples, nfeatures, nseqfeatures, seqlen) 
-    
-# store dataset parameters
-result = "%d, %d, %d, %d" % (nsamples, nfeatures, nseqfeatures, seqlen)
+train_static, train_dynamic, test_static, test_dynamic, train_labels, test_labels = generate_lstm_wins(nsamples, nfeatures, nseqfeatures, seqlen) 
+train_nsamples = train_static.shape[0]
+test_nsamples = test_static.shape[0]
 
-# static data with RF
-rf = RandomForestClassifier(n_estimators=100)
-rf.fit(static_train, labels_train)
-rfstat = rf.score(static_val, labels_val)
-print "Random Forest with static features on validation set: %.4f" % rfstat
-result += ", %.4f" % rfstat
-    
-# dynamic data with HMM
-hmmcl = HMMClassifier()
-model_pos, model_neg = hmmcl.train(3, 10, dynamic_train, labels_train)
-hmmdyn = hmmcl.test(model_pos, model_neg, dynamic_val, labels_val)   
-print "HMM with dynamic features on validation set: %.4f" % hmmdyn
-result += ", %.4f" % hmmdyn
+# split training into two halves
+train_half = train_nsamples / 2
+trainA_static = train_static[:train_half]
+trainB_static = train_static[train_half:]
+trainA_dynamic = train_dynamic[:train_half]
+trainB_dynamic = train_dynamic[train_half:]
+trainA_labels = train_labels[:train_half]
+trainB_labels = train_labels[train_half:]
 
-# dynamic data with RF
-print "Training RF on the dynamic dataset..."
-dynamic_as_static_train = dynamic_train.reshape((dynamic_train.shape[0], dynamic_train.shape[1] * dynamic_train.shape[2]))
-dynamic_as_static_val = dynamic_val.reshape((dynamic_val.shape[0], dynamic_val.shape[1] * dynamic_val.shape[2]))
-rf = RandomForestClassifier(n_estimators=100)
-rf.fit(dynamic_as_static_train, labels_train)
-rfdyn = rf.score(dynamic_as_static_val, labels_val)
-print "RF with dynamic features on validation set: %.4f" % rfdyn
-result += ", %.4f" % rfdyn
-
-# dynamic data with LSTM
-lstmcl = LSTMClassifier(2000, 0.5, 'adagrad', lstm_nepochs)
-model_pos, model_neg = lstmcl.train(dynamic_train, labels_train)
-lstmdyn = lstmcl.test(model_pos, model_neg, dynamic_val, labels_val)
-print "LSTM with dynamic features on validation set: %.4f" % lstmdyn
-result += ", %.4f" % lstmdyn
 
 #
-# Evaluating Joint Models
+# Train enrichment models
 #
-print ""
-print "Splitting data in two halves..."
-fh_idx = np.random.choice(range(0, dynamic_train.shape[0]), size=np.round(dynamic_train.shape[0] * 0.5, 0), replace=False)
-sh_idx = list(set(range(0, dynamic_train.shape[0])) - set(fh_idx))
-fh_data = dynamic_train[fh_idx, :, :]
-fh_labels = labels_train[fh_idx]
-sh_data = dynamic_train[sh_idx, :, :]
-sh_labels = labels_train[sh_idx]
 
-# RF+HMM
-print "Evaluating RF+HMM model:"
+# extract predictions using RF on static
+rf = RandomForestClassifier(n_estimators=nestimators)
+rf.fit(trainA_static, trainA_labels)
+predictions_trainB_rf = rf.predict_log_proba(trainB_static)
+predictions_trainB_rf[predictions_trainB_rf == -inf] = np.min(predictions_trainB_rf[predictions_trainB_rf != -inf])
+predictions_test_rf = rf.predict_log_proba(test_static)
+predictions_test_rf[predictions_test_rf == -inf] = np.min(predictions_test_rf[predictions_test_rf != -inf])
 
-print "Training HMM classifier..."
+# extract predictions using HMM on dynamic
 hmmcl = HMMClassifier()
-model_pos, model_neg = hmmcl.train(3, 10, fh_data, fh_labels)
+model_pos, model_neg = hmmcl.train(nhmmstates, nhmmiter, hmmcovtype, trainA_dynamic, trainA_labels)
+predictions_trainB_hmm = hmmcl.predict_log_proba(model_pos, model_neg, trainB_dynamic)
+ratios_trainB_hmm = hmmcl.pos_neg_ratios(model_pos, model_neg, trainB_dynamic)
+predictions_test_hmm = hmmcl.predict_log_proba(model_pos, model_neg, test_dynamic)
+ratios_test_hmm = hmmcl.pos_neg_ratios(model_pos, model_neg, test_dynamic)
 
-print "Extracting ratios based on the HMM model..."
-sh_ratios = hmmcl.pos_neg_ratios(model_pos, model_neg, sh_data)
-val_ratios = hmmcl.pos_neg_ratios(model_pos, model_neg, dynamic_val)
+# extract predictions using LSTM on dynamic
+lstmcl = LSTMClassifier(lstmsize, lstmdropout, lstmoptim, lstmnepochs, lstmbatchsize)
+model_pos, model_neg = lstmcl.train(trainA_dynamic, trainA_labels)
 
-print "Merging static features and HMM-based ratios..."
-enriched_sh_data = np.hstack((static_train[sh_idx, :], sh_ratios.reshape(len(sh_ratios), 1)))
-enriched_val_data = np.hstack((static_val, val_ratios.reshape(len(val_ratios), 1)))
+mse_pos, mse_neg = lstmcl.predict_mse(model_pos, model_neg, trainB_dynamic)
+predictions_trainB_lstm = np.vstack((mse_pos, mse_neg)).T
+ratios_trainB_lstm = lstmcl.pos_neg_ratios(model_pos, model_neg, trainB_dynamic)
+trainB_activations_pos = lstmcl.activations(model_pos, trainB_dynamic)
+trainB_activations_neg = lstmcl.activations(model_neg, trainB_dynamic)
+trainB_activations = np.concatenate((trainB_activations_pos[:, -1, :], trainB_activations_neg[:, -1, :]), axis=1)
 
-print "Training RF on the merged dataset..."
-rf = RandomForestClassifier(n_estimators=100)
-rf.fit(enriched_sh_data, sh_labels)
-rfhmmboth = rf.score(enriched_val_data, labels_val)
-print "RF+HMM with enriched features on validation set: %.4f" % rfhmmboth
-result += ", %.4f" % rfhmmboth
- 
-# RF+LSTM
-print "Evaluating RF+LSTM model:"
+mse_pos, mse_neg = lstmcl.predict_mse(model_pos, model_neg, test_dynamic)
+predictions_test_lstm = np.vstack((mse_pos, mse_neg)).T
+ratios_test_lstm = lstmcl.pos_neg_ratios(model_pos, model_neg, test_dynamic)
+test_activations_pos = lstmcl.activations(model_pos, test_dynamic)
+test_activations_neg = lstmcl.activations(model_neg, test_dynamic)
+test_activations = np.concatenate((test_activations_pos[:, -1, :], test_activations_neg[:, -1, :]), axis=1)
 
-print "Training LSTM classifier..."
-lstmcl = LSTMClassifier(2000, 0.5, 'adagrad', lstm_nepochs)
-model_pos, model_neg = lstmcl.train(fh_data, fh_labels)
 
-print "Extracting ratios based on the LSTM model..."
-sh_ratios = lstmcl.pos_neg_ratios(model_pos, model_neg, sh_data)
-val_ratios = lstmcl.pos_neg_ratios(model_pos, model_neg, dynamic_val)
+#
+# Combine datasets
+#
 
-print "Merging static features and LSTM-based ratios..."
-enriched_sh_data = np.hstack((static_train[sh_idx, :], sh_ratios.reshape(len(sh_ratios), 1)))
-enriched_val_data = np.hstack((static_val, val_ratios.reshape(len(val_ratios), 1)))
+# datasets for ensemble learning
+trainB_predictions_combined_rf_hmm = np.concatenate((predictions_trainB_rf, ratios_trainB_hmm.reshape((ratios_trainB_hmm.shape[0], 1))), axis=1)
+test_predictions_combined_rf_hmm = np.concatenate((predictions_test_rf, ratios_test_hmm.reshape((ratios_test_hmm.shape[0], 1))), axis=1)
+trainB_predictions_combined_rf_lstm = np.concatenate((predictions_trainB_rf, ratios_trainB_lstm.reshape((ratios_trainB_lstm.shape[0], 1))), axis=1)
+test_predictions_combined_rf_lstm = np.concatenate((predictions_test_rf, ratios_test_lstm.reshape((ratios_test_lstm.shape[0], 1))), axis=1)
 
-print "Training RF on the merged dataset..."
-rf = RandomForestClassifier(n_estimators=100)
-rf.fit(enriched_sh_data, sh_labels)
-rflstmboth = rf.score(enriched_val_data, labels_val)
-print "RF+LSTM with enriched features on validation set: %.4f" % rflstmboth
-result += ", %.4f" % rflstmboth
+# datasets for hybrid learning
+trainB_enriched_by_hmm = np.concatenate((trainB_static, np.matrix(ratios_trainB_hmm).T), axis=1)
+test_enriched_by_hmm = np.concatenate((test_static, np.matrix(ratios_test_hmm).T), axis=1)
+trainB_enriched_by_lstm = np.concatenate((trainB_static, np.matrix(ratios_trainB_lstm).T), axis=1)
+test_enriched_by_lstm = np.concatenate((test_static, np.matrix(ratios_test_lstm).T), axis=1)
+trainB_activations_by_lstm = np.concatenate((trainB_static, trainB_activations), axis=1)
+test_activations_by_lstm = np.concatenate((test_static, test_activations), axis=1)
+
+# dataset to confirm that RF on dynamic is not better than generative models on dynamic data
+trainB_dynamic_as_static = trainB_dynamic.reshape((trainB_dynamic.shape[0], trainB_dynamic.shape[1] * trainB_dynamic.shape[2]))
+test_dynamic_as_static = test_dynamic.reshape((test_dynamic.shape[0], test_dynamic.shape[1] * test_dynamic.shape[2]))
+
+# dataset to confirm that RF on naive combination of features is not better than our fancy models
+trainB_static_and_dynamic_as_static = np.concatenate((trainB_static, trainB_dynamic_as_static), axis=1)
+test_static_and_dynamic_as_static = np.concatenate((test_static, test_dynamic_as_static), axis=1)
+
+# dataset to check how generative models perform if provided with static features along with dynamic
+trainB_static_as_dynamic = np.zeros((trainB_static.shape[0], trainB_static.shape[1], trainB_dynamic.shape[2]))
+for i in range(trainB_static.shape[0]):
+    trainB_static_as_dynamic[i, :, :] = np.tile(trainB_static[i, :], (trainB_dynamic.shape[2], 1)).T
+trainB_dynamic_and_static_as_dynamic = np.concatenate((trainB_dynamic, trainB_static_as_dynamic + np.random.uniform(-0.0001, 0.0001, trainB_static_as_dynamic.shape)), axis=1)
+
+test_static_as_dynamic = np.zeros((test_static.shape[0], test_static.shape[1], test_dynamic.shape[2]))
+for i in range(test_static.shape[0]):
+    test_static_as_dynamic[i, :, :] = np.tile(test_static[i, :], (test_dynamic.shape[2], 1)).T
+test_dynamic_and_static_as_dynamic = np.concatenate((test_dynamic, test_static_as_dynamic + np.random.uniform(-0.0001, 0.0001, test_static_as_dynamic.shape)), axis=1)
+
+
+#
+# Evaluate 12 models
+#
+
+# start storing results
+result = "\n%d, %d, %d, %d" % (nsamples, nfeatures, nseqfeatures, seqlen)
+f.write(result)
+f.flush()
+result = ""
+scores = {1: 0.0, 2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0, 6: 0.0, 7: 0.0, 8: 0.0, 9: 0.0, 10: 0.0, 11: 0.0, 12: 0.0}
+
+# Ensemble on predictions by RF and HMM (1)
+rf = RandomForestClassifier(n_estimators=nestimators)
+rf.fit(trainB_predictions_combined_rf_hmm, trainB_labels)
+scores[1] = rf.score(test_predictions_combined_rf_hmm, test_labels)
     
-# LSTM on both dynamic and static features
-# transform static features into "fake" sequences
-dynamized_static_train = np.zeros((static_train.shape[0], static_train.shape[1], dynamic_train.shape[2]))
-for i in range(static_train.shape[0]):
-    dynamized_static_train[i, :, :] = np.tile(static_train[i, :], (dynamic_train.shape[2], 1)).T
-dynamized_static_val = np.zeros((static_val.shape[0], static_val.shape[1], dynamic_val.shape[2]))
-for i in range(static_val.shape[0]):
-    dynamized_static_val[i, :, :] = np.tile(static_val[i, :], (dynamic_val.shape[2], 1)).T
+# Ensemble on predictions by RF and LSTM (2)
+rf = RandomForestClassifier(n_estimators=nestimators)
+rf.fit(trainB_predictions_combined_rf_lstm, trainB_labels)
+scores[2] = rf.score(test_predictions_combined_rf_lstm, test_labels)
 
-# meld dynamized static and dynamic features together
-all_train = np.concatenate((dynamized_static_train, dynamic_train), axis=1)
-all_val = np.concatenate((dynamized_static_val, dynamic_val), axis=1)
+# Hybrid on features enriched by HMM (3)
+rf = RandomForestClassifier(n_estimators=nestimators)
+rf.fit(trainB_enriched_by_hmm, trainB_labels)
+scores[3] = rf.score(test_enriched_by_hmm, test_labels)
 
-# dynamic data with LSTM
-lstmcl = LSTMClassifier(2000, 0.5, 'adagrad', lstm_nepochs)
-model_pos, model_neg = lstmcl.train(all_train, labels_train)
-lstmboth = lstmcl.test(model_pos, model_neg, all_val, labels_val)
-print "LSTM with dynamized static and dynamic features on validation set: %.4f" % lstmboth
-result += ", %.4f" % lstmboth
+# Hybrid on features enriched by LSTM (4)
+rf = RandomForestClassifier(n_estimators=nestimators)
+rf.fit(trainB_enriched_by_lstm, trainB_labels)
+scores[4] = rf.score(test_enriched_by_lstm, test_labels)
+
+# RF on static features (5)
+rf = RandomForestClassifier(n_estimators=nestimators)
+rf.fit(trainB_static, trainB_labels)
+scores[5] = rf.score(test_static, test_labels)
+
+# RF on dynamic features (6)
+rf = RandomForestClassifier(n_estimators=nestimators)
+rf.fit(trainB_dynamic_as_static, trainB_labels)
+scores[6] = rf.score(test_dynamic_as_static, test_labels)
+
+# HMM on dynamic features (7)
+hmmcl = HMMClassifier()
+model_pos, model_neg = hmmcl.train(nhmmstates, nhmmiter, hmmcovtype, trainB_dynamic, trainB_labels)
+acc, auc = hmmcl.test(model_pos, model_neg, test_dynamic, test_labels)
+scores[7] = acc
+
+# LSTM on dynamic features (8)
+lstmcl = LSTMClassifier(lstmsize, lstmdropout, lstmoptim, lstmnepochs, lstmbatchsize)
+model_pos, model_neg = lstmcl.train(trainB_dynamic, trainB_labels)
+scores[8] = lstmcl.test(model_pos, model_neg, test_dynamic, test_labels)
+
+# HMM on dynamic and static (turned into fake sequences) (9)
+hmmcl = HMMClassifier()
+model_pos, model_neg = hmmcl.train(nhmmstates, nhmmiter, hmmcovtype, trainB_dynamic_and_static_as_dynamic, trainB_labels)
+acc, auc = hmmcl.test(model_pos, model_neg, test_dynamic_and_static_as_dynamic, test_labels)
+scores[9] = acc
+
+# LSTM on dynamic and static (turned into fake sequences) (10)
+lstmcl = LSTMClassifier(lstmsize, lstmdropout, lstmoptim, lstmnepochs, lstmbatchsize)
+model_pos, model_neg = lstmcl.train(trainB_dynamic_and_static_as_dynamic, trainB_labels)
+scores[10] = lstmcl.test(model_pos, model_neg, test_dynamic_and_static_as_dynamic, test_labels)
+
+# RF on static and dynamic (spatialized) features (11)
+rf = RandomForestClassifier(n_estimators=nestimators)
+rf.fit(trainB_static_and_dynamic_as_static, trainB_labels)
+scores[11] = rf.score(test_static_and_dynamic_as_static, test_labels)
+
+# Hybrid on static features and LSTM activations (12)
+rf = RandomForestClassifier(n_estimators=nestimators)
+rf.fit(trainB_activations_by_lstm, trainB_labels)
+scores[12] = rf.score(test_activations_by_lstm, test_labels)
+
+for nr in scores:
+    result += ", %.4f" % scores[nr]
     
-print result
-f.write(result + '\n')
+f.write(result)
 f.close()
 

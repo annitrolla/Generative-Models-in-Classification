@@ -12,10 +12,10 @@ def expandgrid(*itrs):
     product = list(itertools.product(*itrs))
     return [[x[i] for x in product] for i in range(len(itrs))]
 
-nsamples = [500, 1000, 1500, 2000, 2500, 3000]
-nfeatures = [1, 5, 10, 20, 30]
-nseqfeatures = [1, 5, 10, 20, 30]
-seqlen = [3, 10, 30, 50]
+nsamples = [500, 2500, 5000]
+nfeatures = [5, 25, 50]
+nseqfeatures = [5, 25, 50]
+seqlen = [5, 25, 50]
 
 prs = np.array(expandgrid(nsamples, nfeatures, nseqfeatures, seqlen)).T
 with open('../../Results/grid.txt', 'w') as f:
