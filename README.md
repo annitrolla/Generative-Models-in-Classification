@@ -1,4 +1,4 @@
-# Generative-Models-in-Classification
+# Generative Models in Classification
 Supplementary material for the article "Combining Static and Dynamic Features for Multivariate Sequence Classification" presented at the DSAA 2016.
 
 ### Abstract
